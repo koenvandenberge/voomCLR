@@ -36,6 +36,7 @@
 # plot=FALSE
 # save.plot=FALSE
 # varCalc="empirical"
+# reference=rownames(counts)[which.min(genefilter::rowVars(counts))]
 
 
 
@@ -193,8 +194,10 @@ voomALR <- function(counts,
   # - limma-trend? Allows for intensity-dependent prior variance per gene.
   # - analytical weights are much different in magnitude as compared to using the trend.
 {
+  
   out <- list()
-  counts <- as.matrix(counts)
+  referenceCounts <- counts[reference,]
+  counts <- as.matrix(counts[!rownames(counts) == reference,])
   
   #	Check counts
   n <- nrow(counts)
@@ -212,7 +215,7 @@ voomALR <- function(counts,
   
   
   #	Fit linear model to ALR
-  y <- t(log(t(counts+0.5)/(counts[reference,]+0.5)))
+  y <- t(log(t(counts+0.5)/(referenceCounts+0.5)))
   y <- normalizeBetweenArrays(y,method=normalize.method)
   fit <- lmFit(y,design,block=block,correlation=correlation,weights=weights)
   if(is.null(fit$Amean)) fit$Amean <- rowMeans(y,na.rm=TRUE)
@@ -236,7 +239,7 @@ voomALR <- function(counts,
   #	Fit lowess trend to sqrt-standard-deviations by log-count-size
   # TODO: check CLR vs CPM in next line. The mean is being back-transformed.
   # sx <- fit$Amean+mean(log2(lib.size+1))-log2(1e6)
-  sx <- fit$Amean+mean(log(counts[reference,])) # note that lib.size=geoMeans
+  sx <- fit$Amean+mean(log(referenceCounts+0.5)) # note that lib.size=geoMeans
   sy <- sqrt(fit$sigma)
   allzero <- rowSums(counts)==0
   if(any(allzero)) {
@@ -270,7 +273,7 @@ voomALR <- function(counts,
   # fitted.cpm <- 2^fitted.values
   fittedRatio <- exp(fitted.values)
   # fitted.count <- 1e-6 * t(t(fitted.cpm)*(lib.size+1))
-  fitted.count <- fittedRatio * (counts[reference,]+0.5)
+  fitted.count <- fittedRatio * (referenceCounts+0.5)
   # fitted.logcount <- log2(fitted.count)
   fitted.logcount <- log(fitted.count)
   
