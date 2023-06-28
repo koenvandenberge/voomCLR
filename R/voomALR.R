@@ -1,4 +1,4 @@
-## example
+# example
 # set.seed(495212344)
 # n <- 40 # sample size
 # P <- 10 # number of cell types
@@ -14,9 +14,10 @@
 # Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
 # Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
 # Y <- cbind(Y0, Y1)
+# rownames(Y) <- paste0("celltype",1:nrow(Y))
 # group <- factor(rep(0:1, each=10))
 # design <- model.matrix(~group)
-# v <- voomCLR(counts = Y,
+# v <- voomALR(counts = Y,
 #              design = design,
 #              lib.size = NULL)
 # fit <- lmFit(v, design)
@@ -38,12 +39,12 @@
 
 
 
-#' @name voomCLR
-#' @alias voomCLR
+#' @name voomALR
+#' @alias voomALR
 #' @title Transform RNA-Seq Data Ready for Linear Modelling
-#' @description Transform count data using centered-log-ratio, estimate the mean-variance relationship and use this to compute appropriate observation-level weights.
+#' @description Transform count data using the additive log-ratio, estimate the mean-variance relationship and use this to compute appropriate observation-level weights.
 #'  The data are then ready for linear modelling.
-#' @usage voomCLR(counts, design = NULL, lib.size = NULL, normalize.method = "none",
+#' @usage voomALR(counts, design = NULL, lib.size = NULL, normalize.method = "none",
 #'       block = NULL, correlation = NULL, weights = NULL,
 #'       span = 0.5, plot = FALSE, save.plot = FALSE)
 #' @param counts a numeric \code{matrix} containing raw counts, or an \code{ExpressionSet} containing raw counts, or a \code{DGEList} object.
@@ -76,6 +77,7 @@
 #' \code{"empirical"} or \code{"analytical"}.
 #' If \code{"empirical"} (default), weights are estimated in the default voom way, i.e., using the empirical mean-variacnce trend.
 #' If \code{"analytical"}, weights are analytically calculated using a Delta method approximation.
+#' @param reference Reference cell types; one element of \code{rownames(counts)}.
 #' @details
 #'  This function is intended to process RNA-seq or ChIP-seq data prior to linear modelling in limma.
 #'  
@@ -165,7 +167,7 @@
 #'
 #' @keywords rna-seq
 #' @export
-voomCLR <- function(counts,
+voomALR <- function(counts,
                     design=NULL,
                     lib.size=NULL,
                     normalize.method="none",
@@ -175,7 +177,8 @@ voomCLR <- function(counts,
                     span=0.5,
                     plot=FALSE,
                     save.plot=FALSE,
-                    varCalc="empirical")
+                    varCalc="empirical",
+                    reference=rownames(counts)[which.min(genefilter::rowVars(counts))])
   #	Linear modelling of count data with mean-variance modelling at the observation level.
   #	Creates an EList object for entry to lmFit() etc in the limma pipeline.
   #	Gordon Smyth and Charity Law
@@ -208,13 +211,8 @@ voomCLR <- function(counts,
   }
   
   
-  #	Fit linear model to CLR
-  geoMeans <- exp(colMeans(log(counts+0.5)))
-  #	Check lib.size
-  if(is.null(lib.size)){
-    lib.size <- geoMeans
-  }
-  y <- t(log(t(counts+0.5)/geoMeans))
+  #	Fit linear model to ALR
+  y <- t(log(t(counts+0.5)/(counts[reference,]+0.5)))
   y <- normalizeBetweenArrays(y,method=normalize.method)
   fit <- lmFit(y,design,block=block,correlation=correlation,weights=weights)
   if(is.null(fit$Amean)) fit$Amean <- rowMeans(y,na.rm=TRUE)
@@ -238,7 +236,7 @@ voomCLR <- function(counts,
   #	Fit lowess trend to sqrt-standard-deviations by log-count-size
   # TODO: check CLR vs CPM in next line. The mean is being back-transformed.
   # sx <- fit$Amean+mean(log2(lib.size+1))-log2(1e6)
-  sx <- fit$Amean+mean(log(lib.size)) # note that lib.size=geoMeans
+  sx <- fit$Amean+mean(log(counts[reference,])) # note that lib.size=geoMeans
   sy <- sqrt(fit$sigma)
   allzero <- rowSums(counts)==0
   if(any(allzero)) {
@@ -272,7 +270,7 @@ voomCLR <- function(counts,
   # fitted.cpm <- 2^fitted.values
   fittedRatio <- exp(fitted.values)
   # fitted.count <- 1e-6 * t(t(fitted.cpm)*(lib.size+1))
-  fitted.count <- fittedRatio * geoMeans
+  fitted.count <- fittedRatio * (counts[reference,]+0.5)
   # fitted.logcount <- log2(fitted.count)
   fitted.logcount <- log(fitted.count)
   

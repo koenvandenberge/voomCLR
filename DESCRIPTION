@@ -1,6 +1,6 @@
 Package: voomCLR
 Title: Compositional analysis of cell count data.
-Version: 0.99.0
+Version: 0.99.02
 Authors@R: 
     person("Koen", "Van den Berge", , "koen.vdberge@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1833-8478"))
@@ -25,3 +25,9 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
+Collate: 
+    'utils.R'
+    'applyBiasCorrection.R'
+    'plotBeta.R'
+    'voomALR.R'
+    'voomCLR.R'
