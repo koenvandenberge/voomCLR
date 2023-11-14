@@ -152,7 +152,8 @@ voomCLR <- function(counts,
                     span=0.8,
                     plot=FALSE,
                     save.plot=FALSE,
-                    varCalc="empirical")
+                    varCalc="empirical",
+                    varDistribution="NB")
   #	Linear modelling of count data with mean-variance modelling at the observation level.
   #	Creates an EList object for entry to lmFit() etc in the limma pipeline.
   #	Gordon Smyth and Charity Law
@@ -162,8 +163,6 @@ voomCLR <- function(counts,
   # - loess fitting now uses average CLR instead of average CPM
   # - Allow for analytical calculation of standard deviation
   # TODO:
-  # - check difference between lib.size=1 and lib.size=geoMeans
-  # - check CLR backtransform
   # - limma-trend? Allows for intensity-dependent prior variance per gene.
   # - analytical weights are much different in magnitude as compared to using the trend.
 {
@@ -213,7 +212,6 @@ voomCLR <- function(counts,
   }
   
   #	Fit lowess trend to sqrt-standard-deviations by log-count-size
-  # TODO: check CLR vs CPM in next line. The mean is being back-transformed.
   # sx <- fit$Amean+mean(log2(lib.size+1))-log2(1e6)
   sx <- fit$Amean+mean(log(lib.size)) # note that lib.size=geoMeans
   sy <- sqrt(fit$sigma)
@@ -249,7 +247,6 @@ voomCLR <- function(counts,
   # fitted.cpm <- 2^fitted.values
   fittedRatio <- exp(fitted.values)
   # fitted.count <- 1e-6 * t(t(fitted.cpm)*(lib.size+1))
-  # fitted.count <- fittedRatio * geoMeans
   fitted.count <- t(apply(fittedRatio,1,"*",geoMeans))
   # fitted.logcount <- log2(fitted.count)
   fitted.logcount <- log(fitted.count)
@@ -264,9 +261,18 @@ voomCLR <- function(counts,
     geoMeanMat <- matrix(geoMeans, nrow=nrow(counts), ncol=ncol(counts),
                          byrow=TRUE)
     yBarFit <- exp(fitted.values)*geoMeanMat
-    # calculate variances based on Delta method approximation
-    estVar <- ((nrow(counts)-1)/nrow(counts))^2 * (1/(yBarFit))
-    w <- 1/estVar
+    if(varDistribution == "poisson"){
+     
+      # calculate variances based on Poisson Delta method approximation
+      estVar <- ((nrow(counts)-1)/nrow(counts))^2 * (1/(yBarFit))
+      w <- 1/estVar
+    } else if(varDistribution == "NB"){
+      phi <- .estimateNBDispersion(counts,
+                                   design)
+      # calculate variances based on NB Delta method approximation
+      estVar <- ((nrow(counts)-1)/nrow(counts))^2 * ((1/yBarFit) + phi)
+      w <- 1/estVar
+    }
   }
   
   

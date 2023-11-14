@@ -1,10 +1,10 @@
 ---
 title: "Introduction to voomCLR"
 author: 
-  - name: Your name
+  - name: "Koen Van den Berge"
     affiliation:
-    - Your institution
-    email: your.email@somewhere.com
+    - "Janssen Research and Development"
+    email: "kvande14@its.jnj.com"
 output: 
   BiocStyle::html_document:
     self_contained: yes
@@ -45,36 +45,124 @@ bib <- c(
     rmarkdown = citation("rmarkdown")[1],
     sessioninfo = citation("sessioninfo")[1],
     testthat = citation("testthat")[1],
-    voomCLR = citation("voomCLR")[1]
+    voomCLR = citation("voomCLR")[1],
+    limma = citation("limma")[1]
 )
 ```
 
-# Basics
 
-## Install `voomCLR`
+# The `voomCLR` workflow
 
-`R` is an open-source statistical environment which can be easily modified to enhance its functionality via packages. `r Biocpkg("voomCLR")` is a `R` package available via the [Bioconductor](http://bioconductor.org) repository for packages. `R` can be installed on any operating system from [CRAN](https://cran.r-project.org/) after which you can install `r Biocpkg("voomCLR")` by using the following commands in your `R` session:
+## Example 1: no random effect
 
-```{r "install", eval = FALSE}
-if (!requireNamespace("BiocManager", quietly = TRUE)) {
-      install.packages("BiocManager")
-  }
+Simulate a dataset.
 
-BiocManager::install("voomCLR")
-
-## Check that you have a valid Bioconductor installation
-BiocManager::valid()
+```{r}
+set.seed(495212344)
+n <- 40 # sample size
+P <- 10 # number of cell types
+mu0 <- rnbinom(n=P, size=1/2, mu=400)
+mu0 # absolute counts in group 0
+beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
+  rbinom(n=P, size=1, prob=.15) *
+  sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
+mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
+relAbundances <- data.frame(g0=mu0/sum(mu0),
+                            g1=mu1/sum(mu1)) # relative abundance of absolute count
+# relative abundance information (observed data in typical experiment)
+Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
+Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
+Y <- cbind(Y0, Y1)
+rownames(Y) <- paste0("celltype",1:10)
+colnames(Y) <- paste0("sample",1:20)
+group <- factor(rep(0:1, each=10))
 ```
 
-## Required knowledge
+The `voomCLR` workflow works much as a usual limma-voom workflow, with two changes:
 
-`r Biocpkg("voomCLR")` is based on many other packages and in particular in those that have implemented the infrastructure needed for dealing with RNA-seq data (EDIT!). That is, packages like `r Biocpkg("SummarizedExperiment")` (EDIT!).
+ - The `voom` function is replaced by a `voomCLR` function.
+ - An additional function for performing the bias correction is incorporated: `applyBiasCorrection`.
+ 
+It is essential that the code is run in the particular order as shown below.
 
-If you are asking yourself the question "Where do I start using Bioconductor?" you might be interested in [this blog post](http://lcolladotor.github.io/2014/10/16/startbioc/#.VkOKbq6rRuU).
+```{r}
+library(limma)
+library(voomCLR)
+design <- model.matrix(~group)
+v <- voomCLR(counts = Y,
+             design = design,
+             plot = TRUE,
+             span = 0.8) # span for the lowess smoother
+fit <- lmFit(v, design)
+fit <- applyBiasCorrection(fit)
+# plotBeta(fit) # run this to check how confident you are about the bias correction.
+fit <- eBayes(fit)
+tt <- topTable(fit, coef=2, n=Inf)
+head(tt)
+```
 
-## Asking for help
 
-As package developers, we try to explain clearly how to use our packages and in which order to use the functions. But `R` and `Bioconductor` have a steep learning curve so it is critical to learn where to ask for help. The blog post quoted above mentions some but we would like to highlight the [Bioconductor support site](https://support.bioconductor.org/) as the main resource for getting help: remember to use the `voomCLR` tag and check [the older posts](https://support.bioconductor.org/t/voomCLR/). Other alternatives are available such as creating GitHub issues and tweeting. However, please note that if you want to receive help you should adhere to the [posting guidelines](http://www.bioconductor.org/help/support/posting-guide/). It is particularly critical that you provide a small reproducible example and your session information so package developers can track down the source of the error.
+### Assessing specific contrasts
+
+Sometimes, the contrast of interest may relate to a linear combination of model parameters, rather than a single model parameter. 
+In the `limma` framework, we would build contrasts using the `contrasts.fit` function.
+Below, we show a simple example.
+
+```{r}
+design <- model.matrix(~group)
+v <- voomCLR(counts = Y,
+             design = design,
+             plot = TRUE,
+             span = 0.8) # span for the lowess smoother
+fit <- lmFit(v, design)
+## build the contrast matrix
+cm <- matrix(0, nrow=ncol(fit$coefficients), ncol = 1)
+rownames(cm) <- colnames(fit$coefficients)
+colnames(cm) <- "group1vs0"
+cm["group1", "group1vs0"] <- 1
+## reparameterize model => one contrast is now one model parameter
+contFit <- contrasts.fit(fit, contrasts=cm)
+## only then, run the bias correction.
+contFit <- applyBiasCorrection(contFit)
+fit <- eBayes(fit)
+tt <- topTable(fit, coef=2, n=Inf)
+head(tt) # note results are identical.
+```
+
+## Example 2: approximating a random intercept
+
+you need one extra input: the covariate you'd like to add as random effect.
+here I assume this is in the 'patient' object.
+
+```{r}
+patient <- rep(paste0("patient",1:10), 2)
+v <- voomCLR(counts = Y,
+             design = design,
+             lib.size = NULL)
+## estimate correlation within block
+cf <- duplicateCorrelation(v, design, block=patient)
+## re-estimate weights conditional on estimated correlation
+v <- voomCLR(counts = Y,
+             design = design,
+             lib.size = NULL,
+             block = patient,
+             correlation = cf$consensus)
+## use 'final' weights to get 'final' estimate of within-block correlation.
+cf <- duplicateCorrelation(v, design, block=patient)
+fit <- lmFit(v, design,
+             block = patient,
+             correlation = cf$consensus)
+plotBeta(fit)
+fit <- applyBiasCorrection(fit)
+fit <- eBayes(fit)
+tt <- topTable(fit, coef=2, n=Inf)
+head(tt) 
+```
+
+
+
+
+
 
 ## Citing `voomCLR`
 
@@ -85,25 +173,13 @@ We hope that `r Biocpkg("voomCLR")` will be useful for your research. Please use
 citation("voomCLR")
 ```
 
-# Quick start to using to `voomCLR`
-
-```{r "start", message=FALSE}
-library("voomCLR")
-```
-
-Edit this as you see fit =)
-
-Here is an example of you can cite your package inside the vignette:
-
-* `r Biocpkg("voomCLR")` `r Citep(bib[["voomCLR"]])`
-
-
 
 # Reproducibility
 
 The `r Biocpkg("voomCLR")` package `r Citep(bib[["voomCLR"]])` was made possible thanks to:
 
 * R `r Citep(bib[["R"]])`
+* `r Biocpkg("limma")` `r Citep(bib[["limma"]])`
 * `r Biocpkg("BiocStyle")` `r Citep(bib[["BiocStyle"]])`
 * `r CRANpkg("knitr")` `r Citep(bib[["knitr"]])`
 * `r CRANpkg("RefManageR")` `r Citep(bib[["RefManageR"]])`
