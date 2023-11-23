@@ -141,6 +141,7 @@
 #'    fit <- eBayes(fit, robust=TRUE)}
 #'
 #' @keywords rna-seq
+#' @importFrom limma normalizeBetweenArrays lmFit
 #' @export
 voomCLR <- function(counts,
                     design=NULL,

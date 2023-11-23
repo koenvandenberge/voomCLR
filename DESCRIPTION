@@ -15,6 +15,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
+Imports: 
+    limma
 Suggests: 
     BiocStyle,
     covr,
@@ -29,5 +31,6 @@ Collate:
     'utils.R'
     'applyBiasCorrection.R'
     'plotBeta.R'
+    'topTableBC.R'
     'voomALR.R'
     'voomCLR.R'
