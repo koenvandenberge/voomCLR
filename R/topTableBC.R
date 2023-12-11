@@ -1,12 +1,12 @@
 #' @include utils.R
 
 ### for dev:
+# eb=fit[ebcols]
+# A=fit$Amean
 # fit=fit[c("coefficients","stdev.unscaled")]
 # coef=coef
 # number=number
 # genelist=genelist
-# A=fit$Amean
-# eb=fit[ebcols]
 # adjust.method=adjust.method
 # sort.by=sort.by
 # resort.by=resort.by
@@ -15,7 +15,7 @@
 # confint=confint
 
 
-.toptableTBC <- function(fit,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="M",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,...)
+.toptableTBC <- function(fit,n,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="M",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,...)
   #	Summary table of top genes for a single coefficient
   #	Gordon Smyth
   #	Created 21 Nov 2002. Was called toptable() until 1 Feb 2018. Last revised 12 Apr 2020.
@@ -34,19 +34,20 @@
   if(!is.null(genelist) && is.null(dim(genelist))) genelist <- data.frame(ID=genelist,stringsAsFactors=FALSE)
   
   #	Check rownames
-  if(is.null(rn))
+  if(is.null(rn)){
     rn <- 1:nrow(fit$coefficients)
-  else
-    if(anyDuplicated(rn)) {
-      if(is.null(genelist))
-        genelist <- data.frame(ID=rn,stringsAsFactors=FALSE)
-      else
-        if("ID" %in% names(genelist))
-          genelist$ID0 <- rn
+    } else {
+      if(anyDuplicated(rn)) {
+        if(is.null(genelist))
+          genelist <- data.frame(ID=rn,stringsAsFactors=FALSE)
         else
-          genelist$ID <- rn
-        rn <- 1:nrow(fit$coefficients)
+          if("ID" %in% names(genelist))
+            genelist$ID0 <- rn
+          else
+            genelist$ID <- rn
+          rn <- 1:nrow(fit$coefficients)
     }
+  }
   
   #	Check sort.by
   sort.by <- match.arg(sort.by,c("logFC","M","A","Amean","AveExpr","P","p","T","t","none"))
@@ -72,27 +73,26 @@
   }
   
   #	Check for lods component
-  # if(is.null(eb$lods)) {
-  #   if(sort.by=="B") stop("Trying to sort.by B, but B-statistic (lods) not found in MArrayLM object",call.=FALSE)
-  #   if(!is.null(resort.by)) if(resort.by=="B") stop("Trying to resort.by B, but B-statistic (lods) not found in MArrayLM object",call.=FALSE)
-  #   include.B <- FALSE
-  # } else {
-  #   include.B <- TRUE
-  # }
+  if(is.null(eb$lods)) {
+    if(sort.by=="B") stop("Trying to sort.by B, but B-statistic (lods) not found in MArrayLM object",call.=FALSE)
+    if(!is.null(resort.by)) if(resort.by=="B") stop("Trying to resort.by B, but B-statistic (lods) not found in MArrayLM object",call.=FALSE)
+    include.B <- FALSE
+  } else {
+    include.B <- TRUE
+  }
   
   # Bias calculation
-  bias <- apply(fit$coefficients, MARGIN = 2, 
-                FUN = function(x) mlv(sqrt(length(x))*x, 
-                                      method = "meanshift", kernel = "gaussian")/sqrt(length(x)))
+  bias <- apply(fit$coefficients, 2, function(x){
+    .getMode(x, n=n)
+  })
   
   #	Extract statistics for table
-  M <- fit$coefficients[,coef] - bias
+  M <- fit$coefficients[,coef] - bias[coef]
   se_coef <- as.matrix(fit$coefficients / eb$t)[, coef]
-  tstat <- as.matrix(M / se_coef)[, coef]
-  df_coef <- matrix(eb$df.total, dimnames = list(names(tstat)))[, coef]
-  P.Value <- as.matrix(2*pt(abs(tstat), df = df_coef, lower.tail = F))[, coef]
-  # if(include.B) B <- as.matrix(eb$lods)[,coef]
-  
+  tstat <- as.matrix(M / se_coef)
+  df_coef <- matrix(eb$df.total, dimnames = list(names(tstat)))
+  P.Value <- as.matrix(2*pt(abs(tstat), df = df_coef, lower.tail = F))
+
   #	Apply multiple testing adjustment
   adj.P.Value <- p.adjust(P.Value,method=adjust.method)
   
@@ -155,6 +155,19 @@
   }
   
   tab
+}
+
+
+.calcBias <- function(betaMat, n){
+  apply(betaMat, 2, function(x){
+    .getMode(x, n)
+  })
+}
+
+.nonParametricBootBeta <- function(betaMat, n){
+  library(boot)
+  
+  boot(betaMat, func, R=4e3, n=n)
 }
 
 
@@ -273,13 +286,39 @@ topTableBC <- function(fit,coef=NULL,number=10,genelist=fit$genes,adjust.method=
   {
   
   ### for dev:
+  # library(limma)
+  # set.seed(495212344)
+  # n <- 40 # sample size
+  # P <- 10 # number of cell types
+  # mu0 <- rnbinom(n=P, size=1/2, mu=400)
+  # mu0 # absolute counts in group 0
+  # beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
+  #   rbinom(n=P, size=1, prob=.15) *
+  #   sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
+  # mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
+  # relAbundances <- data.frame(g0=mu0/sum(mu0),
+  #                             g1=mu1/sum(mu1)) # relative abundance of absolute count
+  # # relative abundance information (observed data in typical experiment)
+  # Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
+  # Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
+  # Y <- cbind(Y0, Y1)
+  # rownames(Y) <- paste0("celltype",1:10)
+  # colnames(Y) <- paste0("sample",1:20)
+  # group <- factor(rep(0:1, each=10))
+  # design <- model.matrix(~group)
+  # v <- voomCLR(counts = Y,
+  #              design = design,
+  #              lib.size = NULL,
+  #              plot = TRUE)
+  # fit <- lmFit(v, design)
+  # fit <- eBayes(fit)
   # fit <- fit
   # coef <- 2
   # number <- 10
   # genelist=fit$genes
   # eb <- NULL
   # adjust.method <- "BH"
-  # sort.by <- "B"
+  # sort.by <- "M"
   # resort.by <- NULL
   # p.value <- 1
   # fc <- NULL
@@ -331,6 +370,7 @@ topTableBC <- function(fit,coef=NULL,number=10,genelist=fit$genes,adjust.method=
     }
     
     #	Call low-level topTable function for t-statistics
+    n <- nrow(fit$design)
     fit <- unclass(fit)
     ebcols <- c("t","p.value","lods", "df.total")
     if(confint) ebcols <- c("s2.post","df.total",ebcols)
@@ -345,6 +385,7 @@ topTableBC <- function(fit,coef=NULL,number=10,genelist=fit$genes,adjust.method=
                resort.by=resort.by,
                p.value=p.value,
                lfc=lfc,
-               confint=confint)
+               confint=confint,
+               n=n)
   }
 
