@@ -175,7 +175,7 @@
               .calcBias, 
               R=4e3, 
               n=n)
-  varMode <- var(hlp$t[,1])
+  varMode <- var(bootRes$t[,1])
   return(varMode)
 }
 
