@@ -1,6 +1,7 @@
 #' @include utils.R
 
 
+#' @title Plot distribution of coefficients across features.
 #' @name plotBeta
 #' @export
 plotBeta <- function(fit){

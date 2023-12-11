@@ -1,5 +1,6 @@
 #' @include utils.R
 
+#' @title Apply bias correction to estimated regression coefficients.
 #' @name applyBiasCorrection
 #' @export
 applyBiasCorrection <- function(fit){

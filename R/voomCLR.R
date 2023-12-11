@@ -16,7 +16,6 @@
 
 
 #' @name voomCLR
-#' @alias voomCLR
 #' @title Transform RNA-Seq Data Ready for Linear Modelling
 #' @description Transform count data using centered-log-ratio, estimate the mean-variance relationship and use this to compute appropriate observation-level weights.
 #'  The data are then ready for linear modelling.
@@ -95,7 +94,7 @@
 #'  \code{voom} can analyse scaled counts provided that the column sums remain proportional to the total library sizes.
 #'  \code{voom} is designed to take account of sample-specific library sizes and hence \code{voom} should not be used to analyse quantities that have been normalized for library size such as RPKM, transcripts per million (TPM) or counts per million (CPM).
 #'  Such quantities prevent \code{voom} from infering the correct library sizes and hence the correct precision with which each value was measured.
-#' @value
+#' @return
 #'  An \code{\link[limma:EList]{EList}} object with the following components:
 #'  \item{E}{numeric matrix of normalized expression values on the log2 scale}
 #'  \item{weights}{numeric matrix of inverse variance weights}

@@ -45,6 +45,16 @@ If \code{"analytical"}, weights are analytically calculated using a Delta method
 
 \item{reference}{Reference cell types; one element of \code{rownames(counts)}.}
 }
+\value{
+An \code{\link[limma:EList]{EList}} object with the following components:
+\item{E}{numeric matrix of normalized expression values on the log2 scale}
+\item{weights}{numeric matrix of inverse variance weights}
+\item{design}{design matrix}
+\item{lib.size}{numeric vector of total normalized library sizes}
+\item{genes}{dataframe of gene annotation extracted from \code{counts}}
+\item{voom.xy}{if \code{save.plot}, list containing x and y coordinates for points in mean-variance plot}
+\item{voom.line}{if \code{save.plot}, list containing coordinates of loess line in the mean-variance plot}
+}
 \description{
 Transform count data using the additive log-ratio, estimate the mean-variance relationship and use this to compute appropriate observation-level weights.
 The data are then ready for linear modelling.
