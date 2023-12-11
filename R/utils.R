@@ -8,8 +8,8 @@
                                  design,
                                  normalization="TMM"){
   require(edgeR)
-  d <- DGEList(counts)
-  if(normalization == "TMM") d <- calcNormFactors(d)
-  d <- estimateDisp(d, design)
+  d <- edgeR::DGEList(counts)
+  if(normalization == "TMM") d <- edgeR::calcNormFactors(d)
+  d <- edgeR::estimateDisp(d, design)
   return(d$tagwise.dispersion)
 }

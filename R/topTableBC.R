@@ -15,7 +15,7 @@
 # confint=confint
 
 
-.toptableTBC <- function(fit,n,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="M",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,...)
+.toptableTBC <- function(fit,n,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="M",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,bootstrap=FALSE,...)
   #	Summary table of top genes for a single coefficient
   #	Gordon Smyth
   #	Created 21 Nov 2002. Was called toptable() until 1 Feb 2018. Last revised 12 Apr 2020.
@@ -89,7 +89,13 @@
   #	Extract statistics for table
   M <- fit$coefficients[,coef] - bias[coef]
   se_coef <- as.matrix(fit$coefficients / eb$t)[, coef]
-  tstat <- as.matrix(M / se_coef)
+  if(bootstrap){
+    var_mode <- .nonParametricBootBeta(fit$coefficients[,coef], n)
+    varCombined <- se_coef^2 + var_mode
+    tstat <- as.matrix(M / sqrt(varCombined))
+  } else {
+    tstat <- as.matrix(M / se_coef)
+  }
   df_coef <- matrix(eb$df.total, dimnames = list(names(tstat)))
   P.Value <- as.matrix(2*pt(abs(tstat), df = df_coef, lower.tail = F))
 
@@ -158,17 +164,36 @@
 }
 
 
-.calcBias <- function(betaMat, n){
-  apply(betaMat, 2, function(x){
-    .getMode(x, n)
-  })
+
+### for vector of coefs
+.calcBias <- function(beta, ids, n){
+  return(.getMode(betaMat[ids], n=n))
+}
+.nonParametricBootBeta <- function(beta, n, R=4e3){
+  library(boot)
+  bootRes <- boot(beta, # we are resampling rows in 'boot'
+              .calcBias, 
+              R=4e3, 
+              n=n)
+  varMode <- var(hlp$t[,1])
+  return(varMode)
 }
 
-.nonParametricBootBeta <- function(betaMat, n){
-  library(boot)
-  
-  boot(betaMat, func, R=4e3, n=n)
-}
+# ### for matrix of coefs
+# .calcBias <- function(betaMat, ids, n){
+#   apply(betaMat[,ids], 1, function(x){ # on the rows since transposed in input
+#     .getMode(x, n)
+#   })
+# }
+# .nonParametricBootBeta <- function(betaMat, n, R=4e3){
+#   library(boot)
+#   hlp <- boot(t(betaMat), # we are resampling rows in 'boot'
+#               .calcBias, 
+#               R=4e3, 
+#               n=n)
+#   varMode <- apply(hlp$t,2,var)
+#   return(varMode)
+# }
 
 
 
@@ -208,6 +233,7 @@
 #'     If specified, then the results from \code{topTable}, \code{topTableF} or \code{topTreat} will include only genes with (at least one) absolute log-fold-change greater than \code{lfc}.
 #'     This argument is not normally used with \code{topTreat}, which handles fold-change thresholds differently via the \code{treat} function.
 #' @param confint logical, should confidence 95\% intervals be output for \code{logFC}?  Alternatively, can be a numeric value between zero and one specifying the confidence level required.
+#' @param bootstrap logical, should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?
 #' @param dots other \code{topTreat} arguments are passed to \code{topTable}.
 #' @return 
 #'   A dataframe with a row for the \code{number} top genes and the following columns:
@@ -279,7 +305,18 @@
 #' @examples
 #'  #  See lmFit examples
 #'  @export
-topTableBC <- function(fit,coef=NULL,number=10,genelist=fit$genes,adjust.method="BH",sort.by="B",resort.by=NULL,p.value=1,fc=NULL,lfc=NULL,confint=FALSE)
+topTableBC <- function(fit,
+                       coef=NULL,
+                       number=10,
+                       genelist=fit$genes,
+                       adjust.method="BH",
+                       sort.by="B",
+                       resort.by=NULL,
+                       p.value=1,
+                       fc=NULL,
+                       lfc=NULL,
+                       confint=FALSE,
+                       bootstrap=FALSE)
     #	Summary table of top genes, object-orientated version
     #	Gordon Smyth
     #	4 August 2003.  Last modified 20 Aug 2022.
@@ -386,6 +423,7 @@ topTableBC <- function(fit,coef=NULL,number=10,genelist=fit$genes,adjust.method=
                p.value=p.value,
                lfc=lfc,
                confint=confint,
-               n=n)
+               n=n,
+               bootstrap=bootstrap)
   }
 
