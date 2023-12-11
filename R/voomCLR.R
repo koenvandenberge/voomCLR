@@ -105,7 +105,6 @@
 #'  \item{voom.xy}{if \code{save.plot}, list containing x and y coordinates for points in mean-variance plot}
 #'  \item{voom.line}{if \code{save.plot}, list containing coordinates of loess line in the mean-variance plot}
 #' @author Charity Law and Gordon Smyth. Adapted to CLR transformation by Koen Van den Berge on February 10, 2023.
-#'
 #' @references 
 #'  Law, CW, Chen, Y, Shi, W, Smyth, GK (2014).
 #'  Voom: precision weights unlock linear model analysis tools for RNA-seq read counts.
@@ -122,23 +121,36 @@
 #'  RNA-seq analysis is easy as 1-2-3 with limma, Glimma and edgeR.
 #'  \emph{Bioconductor Workflow Package}.
 #'  \url{https://www.bioconductor.org/packages/RNAseq123/}
-#'
 #' @seealso 
-#'
 #'  \code{\link{eBayes}},
 #'  \code{\link{voomWithQualityWeights}}.
 #'  \code{\link{vooma}} is similar to \code{voom} but for microarrays instead of RNA-seq.
-#'  
 #'  \code{voomLmFit} in the edgeR package is a further developed version of voom particularly for sparse data.
-#'  
-#'  A summary of functions for RNA-seq analysis is given in \link{11.RNAseq}.
-#'  @examples
-#'
-#'  \dontrun{
-#'    keep <- filterByExpr(counts, design)
-#'    v <- voom(counts[keep,], design, plot=TRUE)
-#'    fit <- lmFit(v, design)
-#'    fit <- eBayes(fit, robust=TRUE)}
+#' @examples
+#' library(limma)
+#' set.seed(495212344)
+#' n <- 40 # sample size
+#' P <- 10 # number of cell types
+#' mu0 <- rnbinom(n=P, size=1/2, mu=400)
+#' mu0 # absolute counts in group 0
+#' beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
+#'   rbinom(n=P, size=1, prob=.15) *
+#'   sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
+#' mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
+#' relAbundances <- data.frame(g0=mu0/sum(mu0),
+#'                             g1=mu1/sum(mu1)) # relative abundance of absolute count
+#' # relative abundance information (observed data in typical experiment)
+#' Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
+#' Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
+#' Y <- cbind(Y0, Y1)
+#' rownames(Y) <- paste0("celltype",1:10)
+#' colnames(Y) <- paste0("sample",1:20)
+#' group <- factor(rep(0:1, each=10))
+#' design <- model.matrix(~group)
+#' v <- voomCLR(counts = Y,
+#'              design = design,
+#'              lib.size = NULL,
+#'              plot = TRUE)
 #'
 #' @keywords rna-seq
 #' @importFrom limma normalizeBetweenArrays lmFit

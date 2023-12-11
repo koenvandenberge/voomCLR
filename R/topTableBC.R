@@ -15,7 +15,7 @@
 # confint=confint
 
 
-.toptableTBC <- function(fit,n,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="M",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,bootstrap=FALSE,...)
+.toptableTBC <- function(fit,n,design=NULL,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="p",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,bootstrap=FALSE,...)
   #	Summary table of top genes for a single coefficient
   #	Gordon Smyth
   #	Created 21 Nov 2002. Was called toptable() until 1 Feb 2018. Last revised 12 Apr 2020.
@@ -165,35 +165,6 @@
 
 
 
-### for vector of coefs
-.calcBias <- function(beta, ids, n){
-  return(.getMode(betaMat[ids], n=n))
-}
-.nonParametricBootBeta <- function(beta, n, R=4e3){
-  library(boot)
-  bootRes <- boot(beta, # we are resampling rows in 'boot'
-              .calcBias, 
-              R=4e3, 
-              n=n)
-  varMode <- var(bootRes$t[,1])
-  return(varMode)
-}
-
-# ### for matrix of coefs
-# .calcBias <- function(betaMat, ids, n){
-#   apply(betaMat[,ids], 1, function(x){ # on the rows since transposed in input
-#     .getMode(x, n)
-#   })
-# }
-# .nonParametricBootBeta <- function(betaMat, n, R=4e3){
-#   library(boot)
-#   hlp <- boot(t(betaMat), # we are resampling rows in 'boot'
-#               .calcBias, 
-#               R=4e3, 
-#               n=n)
-#   varMode <- apply(hlp$t,2,var)
-#   return(varMode)
-# }
 
 
 
@@ -303,14 +274,40 @@
 #' @author Gordon Smyth. Adapted by Lucas Beerland, Koen Van den Berge, Lieven Clement.
 #' 
 #' @examples
-#'  #  See lmFit examples
+#' library(limma)
+#' set.seed(495212344)
+#' n <- 40 # sample size
+#' P <- 10 # number of cell types
+#' mu0 <- rnbinom(n=P, size=1/2, mu=400)
+#' mu0 # absolute counts in group 0
+#' beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
+#'   rbinom(n=P, size=1, prob=.15) *
+#'   sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
+#' mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
+#' relAbundances <- data.frame(g0=mu0/sum(mu0),
+#'                             g1=mu1/sum(mu1)) # relative abundance of absolute count
+#' # relative abundance information (observed data in typical experiment)
+#' Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
+#' Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
+#' Y <- cbind(Y0, Y1)
+#' rownames(Y) <- paste0("celltype",1:10)
+#' colnames(Y) <- paste0("sample",1:20)
+#' group <- factor(rep(0:1, each=10))
+#' design <- model.matrix(~group)
+#' v <- voomCLR(counts = Y,
+#'              design = design,
+#'              lib.size = NULL,
+#'              plot = TRUE)
+#' fit <- lmFit(v, design)
+#' fit <- eBayes(fit)
+#' tt <- topTableBC(fit, coef=2)
 #'  @export
 topTableBC <- function(fit,
                        coef=NULL,
                        number=10,
                        genelist=fit$genes,
                        adjust.method="BH",
-                       sort.by="B",
+                       sort.by="p",
                        resort.by=NULL,
                        p.value=1,
                        fc=NULL,
@@ -424,6 +421,7 @@ topTableBC <- function(fit,
                lfc=lfc,
                confint=confint,
                n=n,
-               bootstrap=bootstrap)
+               bootstrap=bootstrap,
+               design=fit$design)
   }
 
