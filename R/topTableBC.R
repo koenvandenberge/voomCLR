@@ -1,3 +1,20 @@
+#' @include utils.R
+
+### for dev:
+# fit=fit[c("coefficients","stdev.unscaled")]
+# coef=coef
+# number=number
+# genelist=genelist
+# A=fit$Amean
+# eb=fit[ebcols]
+# adjust.method=adjust.method
+# sort.by=sort.by
+# resort.by=resort.by
+# p.value=p.value
+# lfc=lfc
+# confint=confint
+
+
 .toptableTBC <- function(fit,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="M",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,...)
   #	Summary table of top genes for a single coefficient
   #	Gordon Smyth
@@ -254,6 +271,21 @@ topTableBC <- function(fit,coef=NULL,number=10,genelist=fit$genes,adjust.method=
     #	Gordon Smyth
     #	4 August 2003.  Last modified 20 Aug 2022.
   {
+  
+  ### for dev:
+  # fit <- fit
+  # coef <- 2
+  # number <- 10
+  # genelist=fit$genes
+  # eb <- NULL
+  # adjust.method <- "BH"
+  # sort.by <- "B"
+  # resort.by <- NULL
+  # p.value <- 1
+  # fc <- NULL
+  # lfc <- NULL
+  # confint <- FALSE
+  
     #	Check fit
     if(!is(fit,"MArrayLM")) stop("fit must be an MArrayLM object")
     if(is.null(fit$t) && is.null(fit$F)) stop("Need to run eBayes or treat first")

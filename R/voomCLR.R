@@ -52,6 +52,7 @@
 #' \code{"empirical"} or \code{"analytical"}.
 #' If \code{"empirical"} (default), weights are estimated in the default voom way, i.e., using the empirical mean-variacnce trend.
 #' If \code{"analytical"}, weights are analytically calculated using a Delta method approximation.
+#' @param varDistribution The distribution used to analytically caclulate the mean-variance weights.
 #' @details
 #'  This function is intended to process RNA-seq or ChIP-seq data prior to linear modelling in limma.
 #'  
@@ -297,7 +298,8 @@ voomCLR <- function(counts,
 
 
 
-# ## example
+## example
+# library(limma)
 # set.seed(495212344)
 # n <- 40 # sample size
 # P <- 10 # number of cell types
@@ -322,8 +324,8 @@ voomCLR <- function(counts,
 #              lib.size = NULL,
 #              plot = TRUE)
 # fit <- lmFit(v, design)
-# fit <- applyBiasCorrection(fit)
 # fit <- eBayes(fit)
+# fit <- applyBiasCorrection(fit)
 
 
 

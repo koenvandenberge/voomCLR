@@ -42,6 +42,8 @@ Expressed as a proportion between 0 and 1.}
 \item{varCalc}{\code{"empirical"} or \code{"analytical"}.
 If \code{"empirical"} (default), weights are estimated in the default voom way, i.e., using the empirical mean-variacnce trend.
 If \code{"analytical"}, weights are analytically calculated using a Delta method approximation.}
+
+\item{varDistribution}{The distribution used to analytically caclulate the mean-variance weights.}
 }
 \value{
 An \code{\link[limma:EList]{EList}} object with the following components:
