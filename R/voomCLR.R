@@ -154,7 +154,7 @@
 #'
 #' @keywords rna-seq
 #' @importFrom limma normalizeBetweenArrays lmFit
-#' @import statmod, methods
+#' @import statmod methods
 #' @export
 voomCLR <- function(counts,
                     design=NULL,
