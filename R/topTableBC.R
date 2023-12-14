@@ -3,6 +3,7 @@
 ### for dev:
 # eb=fit[ebcols]
 # A=fit$Amean
+# sigma2post=fit$s2.post
 # design = fit$design
 # fit=fit[c("coefficients","stdev.unscaled")]
 # coef=coef
@@ -14,7 +15,7 @@
 # p.value=p.value
 # lfc=lfc
 # confint=confint
-# bootstrap <- "nonparametric"
+# bootstrap <- "parametric"
 # voomWeights <- voomWeights
 
 
@@ -120,7 +121,7 @@
                                        sigma2 = sigma2post,
                                        weights = voomWeights,
                                        n=n)
-      varCombined <- se_coef^2 + var_mode
+      varCombined <- se_coef^2 + var_mode[coef]
       tstat <- as.matrix(M / sqrt(varCombined))
     }
   } else { # bootstrap is NULL
@@ -330,9 +331,9 @@
 #'              plot = TRUE)
 #' fit <- lmFit(v, design)
 #' fit <- eBayes(fit)
-#' ttNoBoot <- topTableBC(fit, coef=2)
-#' ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric")
-#' ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights)
+#' ttNoBoot <- topTableBC(fit, coef=2, sort.by="none", n=Inf)
+#' ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric", sort.by="none", n=Inf)
+#' ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights, sort.by="none", n=Inf)
 #'  @export
 topTableBC <- function(fit,
                        coef=NULL,
