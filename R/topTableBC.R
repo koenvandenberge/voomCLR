@@ -3,6 +3,7 @@
 ### for dev:
 # eb=fit[ebcols]
 # A=fit$Amean
+# design = fit$design
 # fit=fit[c("coefficients","stdev.unscaled")]
 # coef=coef
 # number=number
@@ -13,13 +14,32 @@
 # p.value=p.value
 # lfc=lfc
 # confint=confint
+# bootstrap <- "nonparametric"
+# voomWeights <- voomWeights
 
 
-.toptableTBC <- function(fit,n,design=NULL,coef=1,number=10,genelist=NULL,A=NULL,eb=NULL,adjust.method="BH",sort.by="p",resort.by=NULL,p.value=1,lfc=0,confint=FALSE,bootstrap=FALSE,...)
+.toptableTBC <- function(fit,
+                         n,
+                         design=NULL,
+                         coef=1,
+                         number=10,
+                         genelist=NULL,
+                         A=NULL,
+                         eb=NULL,
+                         adjust.method="BH",
+                         sort.by="p",
+                         resort.by=NULL,
+                         p.value=1,
+                         lfc=0,
+                         confint=FALSE,
+                         bootstrap=FALSE,
+                         voomWeights=NULL,
+                         sigma2post=NULL,
+                         ...){
   #	Summary table of top genes for a single coefficient
   #	Gordon Smyth
   #	Created 21 Nov 2002. Was called toptable() until 1 Feb 2018. Last revised 12 Apr 2020.
-{
+
   #	Check fit
   fit$coefficients <- as.matrix(fit$coefficients)
   rn <- rownames(fit$coefficients)
@@ -89,11 +109,21 @@
   #	Extract statistics for table
   M <- fit$coefficients[,coef] - bias[coef]
   se_coef <- as.matrix(fit$coefficients / eb$t)[, coef]
-  if(bootstrap){
-    var_mode <- .nonParametricBootBeta(fit$coefficients[,coef], n)
-    varCombined <- se_coef^2 + var_mode
-    tstat <- as.matrix(M / sqrt(varCombined))
-  } else {
+  if(!is.null(bootstrap)){
+    if(bootstrap == "nonparametric"){
+      var_mode <- suppressWarnings(.nonParametricBootBeta(fit$coefficients[,coef], n))
+      varCombined <- se_coef^2 + var_mode
+      tstat <- as.matrix(M / sqrt(varCombined))
+    } else if(bootstrap == "parametric"){
+      var_mode <- .parametricBootstrap(beta = fit$coefficients, 
+                                       design = design,
+                                       sigma2 = sigma2post,
+                                       weights = voomWeights,
+                                       n=n)
+      varCombined <- se_coef^2 + var_mode
+      tstat <- as.matrix(M / sqrt(varCombined))
+    }
+  } else { # bootstrap is NULL
     tstat <- as.matrix(M / se_coef)
   }
   df_coef <- matrix(eb$df.total, dimnames = list(names(tstat)))
@@ -300,7 +330,9 @@
 #'              plot = TRUE)
 #' fit <- lmFit(v, design)
 #' fit <- eBayes(fit)
-#' tt <- topTableBC(fit, coef=2)
+#' ttNoBoot <- topTableBC(fit, coef=2)
+#' ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric")
+#' ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights)
 #'  @export
 topTableBC <- function(fit,
                        coef=NULL,
@@ -313,11 +345,12 @@ topTableBC <- function(fit,
                        fc=NULL,
                        lfc=NULL,
                        confint=FALSE,
-                       bootstrap=FALSE)
+                       bootstrap=FALSE,
+                       voomWeights=NULL){
     #	Summary table of top genes, object-orientated version
     #	Gordon Smyth
     #	4 August 2003.  Last modified 20 Aug 2022.
-  {
+
   
   ### for dev:
   # library(limma)
@@ -358,12 +391,21 @@ topTableBC <- function(fit,
   # fc <- NULL
   # lfc <- NULL
   # confint <- FALSE
+  # bootstrap <- NULL
+  # voomWeights <- v$weights
   
     #	Check fit
     if(!is(fit,"MArrayLM")) stop("fit must be an MArrayLM object")
     if(is.null(fit$t) && is.null(fit$F)) stop("Need to run eBayes or treat first")
     if(is.null(fit$coefficients)) stop("coefficients not found in fit object")
     if(confint && is.null(fit$stdev.unscaled)) stop("stdev.unscaled not found in fit object")
+  
+    # Check weights when bootstrapping
+    if(isTRUE(bootstrap=="parametric")){
+      if(is.null(voomWeights)){
+        stop("Please provide the voom weights when using the parametric bootstrap approach.")
+      }
+    }
     
     #	Check coef
     if(is.null(coef)) {
@@ -408,7 +450,7 @@ topTableBC <- function(fit,
     fit <- unclass(fit)
     ebcols <- c("t","p.value","lods", "df.total")
     if(confint) ebcols <- c("s2.post","df.total",ebcols)
-    .toptableTBC(fit=fit[c("coefficients","stdev.unscaled")],
+    tt <- .toptableTBC(fit=fit[c("coefficients","stdev.unscaled")],
                coef=coef,
                number=number,
                genelist=genelist,
@@ -422,6 +464,8 @@ topTableBC <- function(fit,
                confint=confint,
                n=n,
                bootstrap=bootstrap,
-               design=fit$design)
-  }
-
+               design=fit$design,
+               voomWeights=voomWeights,
+               sigma2post=fit$s2.post)
+    return(tt)
+    }

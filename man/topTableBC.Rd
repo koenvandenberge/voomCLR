@@ -143,7 +143,9 @@ v <- voomCLR(counts = Y,
              plot = TRUE)
 fit <- lmFit(v, design)
 fit <- eBayes(fit)
-tt <- topTableBC(fit, coef=2)
+ttNoBoot <- topTableBC(fit, coef=2)
+ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric")
+ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights)
  @export
 }
 \seealso{
