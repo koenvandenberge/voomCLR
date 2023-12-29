@@ -2,6 +2,7 @@
 
 export(applyBiasCorrection)
 export(plotBeta)
+export(topTableBC)
 export(voomALR)
 export(voomCLR)
 import(methods)

@@ -143,10 +143,9 @@ v <- voomCLR(counts = Y,
              plot = TRUE)
 fit <- lmFit(v, design)
 fit <- eBayes(fit)
-ttNoBoot <- topTableBC(fit, coef=2)
-ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric")
-ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights)
- @export
+ttNoBoot <- topTableBC(fit, coef=2, sort.by="none", n=Inf)
+ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric", sort.by="none", n=Inf)
+ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights, sort.by="none", n=Inf)
 }
 \seealso{
 An overview of linear model and testing functions is given in \link{06.LinearModels}.
