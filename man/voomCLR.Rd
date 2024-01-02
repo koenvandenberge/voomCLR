@@ -128,7 +128,6 @@ v <- voomCLR(counts = Y,
              design = design,
              lib.size = NULL,
              plot = TRUE)
-
 }
 \references{
 Law, CW, Chen, Y, Shi, W, Smyth, GK (2014).

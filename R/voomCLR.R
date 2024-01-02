@@ -151,7 +151,6 @@
 #'              design = design,
 #'              lib.size = NULL,
 #'              plot = TRUE)
-#'
 #' @keywords rna-seq
 #' @importFrom limma normalizeBetweenArrays lmFit
 #' @import statmod methods
@@ -338,8 +337,7 @@ voomCLR <- function(counts,
 #              plot = TRUE)
 # fit <- lmFit(v, design)
 # fit <- eBayes(fit)
-# fit <- applyBiasCorrection(fit)
-
+# tt <- topTableBC(fit, ....)
 
 
 # #### workflow
@@ -353,10 +351,9 @@ voomCLR <- function(counts,
 #              lib.size = NULL)
 # fit <- lmFit(v, design)
 # plotBeta(fit)
-# fit <- applyBiasCorrection(fit)
 # fit <- eBayes(fit)
 # # testing is custom: fill in based on hypothesis of interest.
-# tt <- topTable(fit, ....)
+# tt <- topTableBC(fit, ....)
 
 
 
@@ -378,5 +375,6 @@ voomCLR <- function(counts,
 #              block = patient, 
 #              correlation = cf$consensus)
 # plotBeta(fit)
-# fit <- applyBiasCorrection(fit)
 # fit <- eBayes(fit)
+# # testing is custom: fill in based on hypothesis of interest.
+# tt <- topTableBC(fit, ....)

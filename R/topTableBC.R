@@ -110,7 +110,7 @@
   #	Extract statistics for table
   M <- fit$coefficients[,coef] - bias[coef]
   se_coef <- as.matrix(fit$coefficients / eb$t)[, coef]
-  if(!is.null(bootstrap)){
+  if(bootstrap %in% c("nonparametric", "parametric")){
     if(bootstrap == "nonparametric"){
       var_mode <- suppressWarnings(.nonParametricBootBeta(fit$coefficients[,coef], n))
       varCombined <- se_coef^2 + var_mode
@@ -394,7 +394,7 @@ topTableBC <- function(fit,
   # confint <- FALSE
   # bootstrap <- NULL
   # voomWeights <- v$weights
-  
+
     #	Check fit
     if(!is(fit,"MArrayLM")) stop("fit must be an MArrayLM object")
     if(is.null(fit$t) && is.null(fit$F)) stop("Need to run eBayes or treat first")

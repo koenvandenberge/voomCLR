@@ -94,10 +94,9 @@ v <- voomCLR(counts = Y,
              plot = TRUE,
              span = 0.8) # span for the lowess smoother
 fit <- lmFit(v, design)
-fit <- applyBiasCorrection(fit)
-# plotBeta(fit) # run this to check how confident you are about the bias correction.
+# plotBeta(fit) # run this to check how confident you can be about the bias correction.
 fit <- eBayes(fit)
-tt <- topTable(fit, coef=2, n=Inf)
+tt <- topTableBC(fit, coef=2, n=Inf)
 head(tt)
 ```
 
@@ -122,10 +121,8 @@ colnames(cm) <- "group1vs0"
 cm["group1", "group1vs0"] <- 1
 ## reparameterize model => one contrast is now one model parameter
 contFit <- contrasts.fit(fit, contrasts=cm)
-## only then, run the bias correction.
-contFit <- applyBiasCorrection(contFit)
-fit <- eBayes(fit)
-tt <- topTable(fit, coef=2, n=Inf)
+contFit <- eBayes(contFit)
+tt <- topTableBC(contFit, coef=1, n=Inf)
 head(tt) # note results are identical.
 ```
 
@@ -153,9 +150,8 @@ fit <- lmFit(v, design,
              block = patient,
              correlation = cf$consensus)
 plotBeta(fit)
-fit <- applyBiasCorrection(fit)
 fit <- eBayes(fit)
-tt <- topTable(fit, coef=2, n=Inf)
+tt <- topTableBC(fit, coef=2, n=Inf)
 head(tt) 
 ```
 
