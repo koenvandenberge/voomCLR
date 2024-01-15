@@ -81,7 +81,20 @@
     modeMat[bb,] <- curModes
   }
   
+  ## calculate covariance
+  covMat <- matrix(NA, nrow=nrow(beta), ncol=ncol(beta),
+                   dimnames=dimnames(beta))
+  for(pp in 1:length(simBetaList)){
+    for(cc in 1:ncol(modeMat)){
+      covMat[pp,cc] <- cov(simBetaList[[pp]][,cc], modeMat[,cc])
+    }
+  }
+  
+  ## variance of mode
   varMode <- apply(modeMat, 2, var)
-  return(varMode)
+  names(varMode) <- colnames(beta)
+  
+  return(list("varMode"=varMode,
+              "covMode"=covMat))
 }
 

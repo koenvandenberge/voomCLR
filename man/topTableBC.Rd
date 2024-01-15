@@ -4,13 +4,9 @@
 \alias{topTableBC}
 \title{Table of Top Genes from Linear Model Fit}
 \usage{
-topTable(fit, coef = NULL, number = 10, genelist = fit$genes,
+topTableBC(fit, coef = NULL, number = 10, genelist = fit$genes,
            adjust.method = "BH", sort.by = "B", resort.by = NULL,
            p.value = 1, fc = NULL, lfc = NULL, confint = FALSE)
-topTableF(fit, number = 10, genelist = fit$genes,
-            adjust.method="BH", sort.by="F",
-            p.value = 1, fc = NULL, lfc = NULL)
-topTreat(fit, coef = 1, sort.by = "p", resort.by = NULL, \dots)
 }
 \arguments{
 \item{fit}{list containing a linear model fit produced by \code{lmFit}, \code{lm.series}, \code{gls.series} or \code{mrlm}.
@@ -43,7 +39,7 @@ This argument is not normally used with \code{topTreat}, which handles fold-chan
 
 \item{confint}{logical, should confidence 95\\% intervals be output for \code{logFC}?  Alternatively, can be a numeric value between zero and one specifying the confidence level required.}
 
-\item{bootstrap}{logical, should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?}
+\item{bootstrap}{Either \code{"nonparametric"}, \code{"parametric"} or \code{FALSE}. Should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?}
 
 \item{p.valuecutoff}{value for adjusted p-values. Only genes with lower p-values are listed.}
 

@@ -116,12 +116,12 @@
       varCombined <- se_coef^2 + var_mode
       tstat <- as.matrix(M / sqrt(varCombined))
     } else if(bootstrap == "parametric"){
-      var_mode <- .parametricBootstrap(beta = fit$coefficients, 
+      parBootOut <- .parametricBootstrap(beta = fit$coefficients, 
                                        design = design,
                                        sigma2 = sigma2post,
                                        weights = voomWeights,
                                        n=n)
-      varCombined <- se_coef^2 + var_mode[coef]
+      varCombined <- se_coef^2 + parBootOut$varMode[coef] - 2*parBootOut$covMode[,coef]
       tstat <- as.matrix(M / sqrt(varCombined))
     }
   } else { # bootstrap is NULL
@@ -204,13 +204,9 @@
 #' 
 #' @description Extract a table of the top-ranked genes from a linear model fit.
 #' @usage 
-#' topTable(fit, coef = NULL, number = 10, genelist = fit$genes,
+#' topTableBC(fit, coef = NULL, number = 10, genelist = fit$genes,
 #'            adjust.method = "BH", sort.by = "B", resort.by = NULL,
 #'            p.value = 1, fc = NULL, lfc = NULL, confint = FALSE)
-#' topTableF(fit, number = 10, genelist = fit$genes,
-#'             adjust.method="BH", sort.by="F",
-#'             p.value = 1, fc = NULL, lfc = NULL)
-#' topTreat(fit, coef = 1, sort.by = "p", resort.by = NULL, \dots)
 #' @param fit list containing a linear model fit produced by \code{lmFit}, \code{lm.series}, \code{gls.series} or \code{mrlm}.
 #'     For \code{topTable}, \code{fit} should be an object of class \code{MArrayLM} as produced by \code{lmFit} and \code{eBayes}.
 #' @param coef column number or column name specifying which coefficient or contrast of the linear model is of interest. For \code{topTable}, can also be a vector of column subscripts, in which case the gene ranking is by F-statistic for that set of contrasts.
@@ -235,7 +231,7 @@
 #'     If specified, then the results from \code{topTable}, \code{topTableF} or \code{topTreat} will include only genes with (at least one) absolute log-fold-change greater than \code{lfc}.
 #'     This argument is not normally used with \code{topTreat}, which handles fold-change thresholds differently via the \code{treat} function.
 #' @param confint logical, should confidence 95\% intervals be output for \code{logFC}?  Alternatively, can be a numeric value between zero and one specifying the confidence level required.
-#' @param bootstrap logical, should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?
+#' @param bootstrap Either \code{"nonparametric"}, \code{"parametric"} or \code{FALSE}. Should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?
 #' @param dots other \code{topTreat} arguments are passed to \code{topTable}.
 #' @return 
 #'   A dataframe with a row for the \code{number} top genes and the following columns:
@@ -392,7 +388,7 @@ topTableBC <- function(fit,
   # fc <- NULL
   # lfc <- NULL
   # confint <- FALSE
-  # bootstrap <- NULL
+  # bootstrap <- "parametric"
   # voomWeights <- v$weights
 
     #	Check fit
