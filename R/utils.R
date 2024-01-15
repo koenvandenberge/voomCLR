@@ -48,7 +48,7 @@
 
 
 ### PARAMETRIC BOOTSTRAP
-.parametricBootstrap <- function(beta, design, sigma2, weights, n, R=4e3){
+.parametricBootstrap <- function(beta, design, sigma2, weights, n, R=4e3, L=NULL){
   
   ### for dev:
   # beta <- fit$coefficients
@@ -67,10 +67,18 @@
   }
   
   ## simulate for each population
-  simBetaList <- list()
-  for(pp in 1:nrow(beta)){
-    curSimBeta <- mixtools::rmvnorm(n=R, mu=beta[pp,], sigma=covBetaList[[pp]])
-    simBetaList[[pp]] <- curSimBeta
+  if(is.null(L)){
+    simBetaList <- list()
+    for(pp in 1:nrow(beta)){
+      curSimBeta <- mixtools::rmvnorm(n=R, mu=beta[pp,], sigma=covBetaList[[pp]])
+      simBetaList[[pp]] <- curSimBeta
+    }
+  } else {
+    simBetaList <- list()
+    for(pp in 1:nrow(beta)){
+      curSimBeta <- mixtools::rmvnorm(n=R, mu=beta[pp,], sigma=t(L) %*% covBetaList[[pp]] %*% L)
+      simBetaList[[pp]] <- curSimBeta
+    }
   }
   
   ## calculate mode for each bootstrap iteration

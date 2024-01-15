@@ -41,6 +41,8 @@ This argument is not normally used with \code{topTreat}, which handles fold-chan
 
 \item{bootstrap}{Either \code{"nonparametric"}, \code{"parametric"} or \code{FALSE}. Should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?}
 
+\item{contrastMatrix}{If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix.}
+
 \item{p.valuecutoff}{value for adjusted p-values. Only genes with lower p-values are listed.}
 
 \item{dots}{other \code{topTreat} arguments are passed to \code{topTable}.}
@@ -142,6 +144,13 @@ fit <- eBayes(fit)
 ttNoBoot <- topTableBC(fit, coef=2, sort.by="none", n=Inf)
 ttNonParBoot <- topTableBC(fit, coef=2, bootstrap="nonparametric", sort.by="none", n=Inf)
 ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weights, sort.by="none", n=Inf)
+
+## using contrasts.fit:
+L <- matrix(c(0,1), nrow=2, ncol=1)
+conFit <- contrasts.fit(fit, contrast=L)
+conFit <- eBayes(conFit)
+ttParBoot <- topTableBC(conFit, coef=1, bootstrap="parametric", voomWeights=v$weights, contrastMatrix=L, sort.by="none", n=Inf)
+
 }
 \seealso{
 An overview of linear model and testing functions is given in \link{06.LinearModels}.
