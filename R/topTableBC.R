@@ -117,13 +117,26 @@
       varCombined <- se_coef^2 + var_mode
       tstat <- as.matrix(M / sqrt(varCombined))
     } else if(bootstrap == "parametric"){
-      parBootOut <- .parametricBootstrap(beta = fit$coefficients, 
-                                       design = design,
-                                       sigma2 = sigma2post,
-                                       weights = voomWeights,
-                                       n=n,
-                                       L=contrastMatrix)
-      varCombined <- se_coef^2 + parBootOut$varMode[coef] - 2*parBootOut$covMode[,coef]
+      if(is.null(contrastMatrix)){
+        ## calculate full Sigma
+        parBootOut <- .parametricBootstrap(beta = fit$coefficients, 
+                                           design = design,
+                                           sigma2 = sigma2post,
+                                           weights = voomWeights,
+                                           n=n,
+                                           L=contrastMatrix)
+        varCombined <- se_coef^2 + parBootOut$varMode[coef] - 2*parBootOut$covMode[,coef]
+      } else {
+        ## focus on contrast
+        parBootOut <- .parametricBootstrap(beta = fit$coefficients[,coef,drop=FALSE], 
+                                           design = design,
+                                           sigma2 = sigma2post,
+                                           weights = voomWeights,
+                                           n=n,
+                                           L=contrastMatrix)
+        varCombined <- se_coef^2 + parBootOut$varMode - 2*parBootOut$covMode
+      }
+      
       tstat <- as.matrix(M / sqrt(varCombined))
     }
   } else { # bootstrap is NULL
@@ -360,7 +373,7 @@ topTableBC <- function(fit,
     #	4 August 2003.  Last modified 20 Aug 2022.
 
   
-  ### for dev:
+  # ### for dev:
   # library(limma)
   # set.seed(495212344)
   # n <- 40 # sample size
@@ -401,6 +414,7 @@ topTableBC <- function(fit,
   # confint <- FALSE
   # bootstrap <- "parametric"
   # voomWeights <- v$weights
+  # contrastMatrix <- matrix(c(0,1),ncol=1)
 
     #	Check fit
     if(!is(fit,"MArrayLM")) stop("fit must be an MArrayLM object")
