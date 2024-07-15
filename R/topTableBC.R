@@ -37,6 +37,7 @@
                          voomWeights=NULL,
                          sigma2post=NULL,
                          contrastMatrix=NULL,
+                         returnVars=FALSE,
                          ...){
   #	Summary table of top genes for a single coefficient
   #	Gordon Smyth
@@ -161,6 +162,15 @@
     adj.P.Value <- adj.P.Value[sig]
     # if(include.B) B <- B[sig]
     rn <- rn[sig]
+    
+    if(returnVars){
+      if(bootstrap == "nonparametric"){
+        var_mode <- var_mode[sig]
+      } else if(bootstrap == "parametric"){
+        var_mode <- parBootOut$varMode[coef][sig]
+        covMode <- parBootOut$covMode[,coef][sig]
+    }
+    }
   }
   
   #	Are enough rows left?
@@ -191,9 +201,19 @@
     tab$CI.R <- M[top]+margin.error
   }
   if(!is.null(A)) tab$AveExpr <- A[top]
-  tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top])
-  # if(include.B) tab$B <- B[top]
-  rownames(tab) <- rn[top]
+  
+  if(!returnVars){
+    tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top])
+    # if(include.B) tab$B <- B[top]
+    rownames(tab) <- rn[top]
+  } else if(returnVars){
+    if(bootstrap == "nonparametric"){
+      tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top], var.coef=se_coef[top]^2, var.mode=var_mode[top])
+    } else if(bootstrap == "parametric"){
+      tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top], var.coef=se_coef[top]^2, var.mode=var_mode[top], cov.mode=covMode)
+    }
+    rownames(tab) <- rn[top]
+  }
   
   #	Resort table
   if(!is.null(resort.by)) {
@@ -248,6 +268,7 @@
 #' @param confint logical, should confidence 95\% intervals be output for \code{logFC}?  Alternatively, can be a numeric value between zero and one specifying the confidence level required.
 #' @param bootstrap Either \code{"nonparametric"}, \code{"parametric"} or \code{FALSE}. Should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?
 #' @param contrastMatrix If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix. 
+#' @param returnVars Logical: should all variance components be returned? Only applicable if using bootstrapping.
 #' @param dots other \code{topTreat} arguments are passed to \code{topTable}.
 #' @return 
 #'   A dataframe with a row for the \code{number} top genes and the following columns:
@@ -367,7 +388,8 @@ topTableBC <- function(fit,
                        confint=FALSE,
                        bootstrap=FALSE,
                        voomWeights=NULL,
-                       contrastMatrix=NULL){
+                       contrastMatrix=NULL,
+                       returnVars=FALSE){
     #	Summary table of top genes, object-orientated version
     #	Gordon Smyth
     #	4 August 2003.  Last modified 20 Aug 2022.
@@ -489,6 +511,7 @@ topTableBC <- function(fit,
                design=fit$design,
                voomWeights=voomWeights,
                sigma2post=fit$s2.post,
-               contrastMatrix=contrastMatrix)
+               contrastMatrix=contrastMatrix,
+               returnVars=returnVars)
     return(tt)
     }

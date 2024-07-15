@@ -17,7 +17,7 @@ package: "`r pkg_ver('voomCLR')`"
 vignette: >
   %\VignetteIndexEntry{Introduction to voomCLR}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}  
+  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include = FALSE}

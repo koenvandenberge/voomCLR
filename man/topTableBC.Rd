@@ -43,6 +43,8 @@ This argument is not normally used with \code{topTreat}, which handles fold-chan
 
 \item{contrastMatrix}{If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix.}
 
+\item{returnVars}{Logical: should all variance components be returned? Only applicable if using bootstrapping.}
+
 \item{p.valuecutoff}{value for adjusted p-values. Only genes with lower p-values are listed.}
 
 \item{dots}{other \code{topTreat} arguments are passed to \code{topTable}.}
