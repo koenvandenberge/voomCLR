@@ -40,8 +40,9 @@
                          returnVars=FALSE,
                          ...){
   #	Summary table of top genes for a single coefficient
-  #	Gordon Smyth
+  #	Original author: Gordon Smyth
   #	Created 21 Nov 2002. Was called toptable() until 1 Feb 2018. Last revised 12 Apr 2020.
+  # Adapted by Koen Van den Berge to include bias correction in 2024.
 
   #	Check fit
   fit$coefficients <- as.matrix(fit$coefficients)
@@ -127,6 +128,8 @@
                                            n=n,
                                            L=contrastMatrix)
         varCombined <- se_coef^2 + parBootOut$varMode[coef] - 2*parBootOut$covMode[,coef]
+        var_mode <- rep(parBootOut$varMode[coef], length(rn))
+        cov_mode <- parBootOut$covMode[,coef]
       } else {
         ## focus on contrast
         parBootOut <- .parametricBootstrap(beta = fit$coefficients[,coef,drop=FALSE], 
@@ -136,6 +139,8 @@
                                            n=n,
                                            L=contrastMatrix)
         varCombined <- se_coef^2 + parBootOut$varMode - 2*parBootOut$covMode
+        var_mode <- rep(parBootOut$varMode, length(rn))
+        cov_mode <- parBootOut$covMode
       }
       
       tstat <- as.matrix(M / sqrt(varCombined))
@@ -167,8 +172,8 @@
       if(bootstrap == "nonparametric"){
         var_mode <- var_mode[sig]
       } else if(bootstrap == "parametric"){
-        var_mode <- parBootOut$varMode[coef][sig]
-        covMode <- parBootOut$covMode[,coef][sig]
+        var_mode <- var_mode[sig]
+        cov_mode <- cov_mode[sig]
     }
     }
   }
@@ -210,7 +215,7 @@
     if(bootstrap == "nonparametric"){
       tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top], var.coef=se_coef[top]^2, var.mode=var_mode[top])
     } else if(bootstrap == "parametric"){
-      tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top], var.coef=se_coef[top]^2, var.mode=var_mode[top], cov.mode=covMode)
+      tab <- data.frame(tab,t=tstat[top],P.Value=P.Value[top],adj.P.Val=adj.P.Value[top], var.coef=se_coef[top]^2, var.mode=var_mode[top], cov.mode=cov_mode[top])
     }
     rownames(tab) <- rn[top]
   }
@@ -235,60 +240,60 @@
 
 
 #' @name topTableBC
-#' @title Table of Top Genes from Linear Model Fit
+#' @title Table of Top Genes from Linear Model Fit, using bias correction.
 #' 
-#' @description Extract a table of the top-ranked genes from a linear model fit.
+#' @description Extract a table of the top-ranked features from a linear model fit after running voomCLR.
 #' @usage 
 #' topTableBC(fit, coef = NULL, number = 10, genelist = fit$genes,
 #'            adjust.method = "BH", sort.by = "B", resort.by = NULL,
 #'            p.value = 1, fc = NULL, lfc = NULL, confint = FALSE)
 #' @param fit list containing a linear model fit produced by \code{lmFit}, \code{lm.series}, \code{gls.series} or \code{mrlm}.
-#'     For \code{topTable}, \code{fit} should be an object of class \code{MArrayLM} as produced by \code{lmFit} and \code{eBayes}.
-#' @param coef column number or column name specifying which coefficient or contrast of the linear model is of interest. For \code{topTable}, can also be a vector of column subscripts, in which case the gene ranking is by F-statistic for that set of contrasts.
-#' @param number maximum number of genes to list.
-#' @param genelist data frame or character vector containing gene information.
-#'     For \code{topTable} only, this defaults to \code{fit$genes}.
+#'     For \code{topTableBC}, \code{fit} should be an object of class \code{MArrayLM} as produced by \code{lmFit} and \code{eBayes}.
+#' @param coef column number or column name specifying which coefficient or contrast of the linear model is of interest. For \code{topTableBC}, can also be a vector of column subscripts, in which case the gene ranking is by F-statistic for that set of contrasts.
+#' @param number maximum number of features to list.
+#' @param bootstrap Either \code{"nonparametric"}, \code{"parametric"} or \code{FALSE}. Should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?
+#' @param voomWeights 
+#'      Required when \code{bootstrap = "parametric"}. The observation-level heteroscedasticity weights after running \code{voomCLR}.
+#'      Recommended to use \code{v$weights}, with \code{v} the output from \code{voomCLR}.
+#' @param contrastMatrix If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix. 
+#' @param genelist data frame or character vector containing feature information.
+#'     For \code{topTableBC} only, this defaults to \code{fit$genes}.
 #' @param adjust.method method used to adjust the p-values for multiple testing.  Options, in increasing conservatism, include \code{"none"}, \code{"BH"}, \code{"BY"} and \code{"holm"}.
 #'     See \code{\link{p.adjust}} for the complete list of options. A \code{NULL} value will result in the default adjustment method, which is \code{"BH"}.
 #' @param sort.by
 #'     character string specifying which statistic to rank the genes by.
-#'     Possible values for \code{topTable} are \code{"logFC"}, \code{"AveExpr"}, \code{"t"}, \code{"P"}, \code{"p"}, \code{"B"} or \code{"none"}.
+#'     Possible values for \code{topTableBC} are \code{"logFC"}, \code{"AveExpr"}, \code{"t"}, \code{"P"}, \code{"p"} or \code{"none"}.
 #'     (Permitted synonyms are \code{"M"} for \code{"logFC"}, \code{"A"} or \code{"Amean"} for \code{"AveExpr"}, \code{"T"} for \code{"t"} and \code{"p"} for \code{"P"}.)
-#'     Possible values for \code{topTableF} are \code{"F"} or \code{"none"}.
-#'     \code{topTreat} accepts the same values as \code{topTable} except for \code{"B"}.
 #' @param resort.by
 #'     character string specifying statistic to sort the selected genes by in the output data.frame.  Possibilities are the same as for \code{sort.by}.
 #' @param p.valuecutoff value for adjusted p-values. Only genes with lower p-values are listed.
-#' @param fc optional minimum fold-change required.
+#' @param fc Not implemented yet for \code{topTableBC}. optional minimum fold-change required. 
 #' @param lfc
-#'     optional minimum log2-fold-change required, equal to \code{log2(fc)}.
+#'     Not implemented yet for \code{topTableBC}. Optional minimum log2-fold-change required, equal to \code{log2(fc)}. 
 #'     \code{fc} and \code{lfc} are alternative ways to specify a fold-change cutoff and, if both are specified, then \code{fc} take precedence.
-#'     If specified, then the results from \code{topTable}, \code{topTableF} or \code{topTreat} will include only genes with (at least one) absolute log-fold-change greater than \code{lfc}.
+#'     If specified, then the results from \code{topTableBC} will include only genes with (at least one) absolute log-fold-change greater than \code{lfc}.
 #'     This argument is not normally used with \code{topTreat}, which handles fold-change thresholds differently via the \code{treat} function.
-#' @param confint logical, should confidence 95\% intervals be output for \code{logFC}?  Alternatively, can be a numeric value between zero and one specifying the confidence level required.
-#' @param bootstrap Either \code{"nonparametric"}, \code{"parametric"} or \code{FALSE}. Should bootstrapping be performed to take into account uncertainty of the estimation of the bias correction term?
-#' @param contrastMatrix If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix. 
+#' @param confint logical, should confidence 95% intervals be output for \code{logFC}?  Alternatively, can be a numeric value between zero and one specifying the confidence level required.
 #' @param returnVars Logical: should all variance components be returned? Only applicable if using bootstrapping.
-#' @param dots other \code{topTreat} arguments are passed to \code{topTable}.
+#' @param dots other \code{topTreat} arguments are passed to \code{topTableBC}.
 #' @return 
 #'   A dataframe with a row for the \code{number} top genes and the following columns:
 #'   \item{genelist}{one or more columns of probe annotation, if genelist was included as input}
-#'   \item{logFC}{estimate of the log2-fold-change corresponding to the effect or contrast (for \code{topTableF} there may be several columns of log-fold-changes)}
+#'   \item{logFC}{estimate of the log2-fold-change corresponding to the effect or contrast}
 #'   \item{CI.L}{left limit of confidence interval for \code{logFC} (if \code{confint=TRUE} or \code{confint} is numeric)}
 #'   \item{CI.R}{right limit of confidence interval for \code{logFC} (if \code{confint=TRUE} or \code{confint} is numeric)}
 #'   \item{AveExpr}{average log2-expression for the probe over all arrays and channels, same as \code{Amean} in the \code{MarrayLM} object}
-#'   \item{t}{moderated t-statistic (omitted for \code{topTableF})}
-#'   \item{F}{moderated F-statistic (omitted for \code{topTable} unless more than one coef is specified)}
+#'   \item{t}{moderated t-statistic}
+#'   \item{F}{moderated F-statistic (omitted for \code{topTableBC} unless more than one coef is specified)}
 #'   \item{P.Value}{raw p-value}
 #'   \item{adj.P.Value}{adjusted p-value or q-value}
-#'   \item{B}{log-odds that the gene is differentially expressed (omitted for \code{topTreat})}
 #'   
 #'   If \code{fit} had unique rownames, then the row.names of the above data.frame are the same in sorted order.
 #'   Otherwise, the row.names of the data.frame indicate the row number in \code{fit}.
 #'   If \code{fit} had duplicated row names, then these are preserved in the \code{ID} column of the data.frame, or in \code{ID0} if \code{genelist} already contained an \code{ID} column.
 #' @details
 #'   These functions summarize the linear model fit object produced by \code{lmFit}, \code{lm.series}, \code{gls.series} or \code{mrlm} by selecting the top-ranked genes for any given contrast, or for a set of contrasts.
-#'   \code{topTable} assumes that the linear model fit has already been processed by \code{\link{eBayes}}.
+#'   \code{topTableBC} assumes that the linear model fit has already been processed by \code{\link{eBayes}}.
 #'   \code{topTreat} assumes that the fit has been processed by \code{\link{treat}}.
 #'   
 #'   If \code{coef} has a single value, then the moderated t-statistics and p-values for that coefficient or contrast are used.
@@ -309,10 +314,10 @@
 #'   
 #'   Normally the genes appear in order of selection in the output table.
 #'   If a different order is wanted, then the \code{resort.by} argument may be useful.
-#'   For example, \code{topTable(fit, sort.by="B", resort.by="logFC")} selects the top genes according to log-odds of differential expression and then orders the selected genes by log-ratio in decreasing order.
-#'   Or \code{topTable(fit, sort.by="logFC", resort.by="logFC")} would select the genes by absolute log-fold-change and then sort them from most positive to most negative.
+#'   For example, \code{topTableBC(fit, sort.by="B", resort.by="logFC")} selects the top genes according to log-odds of differential expression and then orders the selected genes by log-ratio in decreasing order.
+#'   Or \code{topTableBC(fit, sort.by="logFC", resort.by="logFC")} would select the genes by absolute log-fold-change and then sort them from most positive to most negative.
 #'   
-#'   Toptable output for all probes in original (unsorted) order can be obtained by \code{topTable(fit,sort="none",n=Inf)}.
+#'   Toptable output for all probes in original (unsorted) order can be obtained by \code{topTableBC(fit,sort="none",n=Inf)}.
 #'   However \code{\link{write.fit}} or \code{\link{write}} may be preferable if the intention is to write the results to a file.
 #'   A related method is \code{as.data.frame(fit)} which coerces an \code{MArrayLM} object to a data.frame.
 #'   
@@ -322,10 +327,8 @@
 #'   The arguments \code{fc} and \code{lfc} give the ability to filter genes by log-fold change, but see the Note below.
 #'   This argument is not available for \code{topTreat} because \code{treat} already handles fold-change thresholding in a more sophisticated way.
 #'   
-#'   The function \code{topTableF} is scheduled for removal in a future version of limma.
-#'   It is equivalent to \code{topTable} with \code{coef=NULL}.
 #' @note
-#'   Although \code{topTable} enables users to set both p-value and fold-change cutoffs, the use of fold-change cutoffs is not generally recommended.
+#'   Although \code{topTableBC} enables users to set both p-value and fold-change cutoffs, the use of fold-change cutoffs is not generally recommended.
 #'   If the fold changes and p-values are not highly correlated, then the use of a fold change cutoff can increase the false discovery rate above the nominal level.
 #'   Users wanting to use fold change thresholding are usually recommended to use \code{treat} and \code{topTreat} instead.
 #'   
@@ -335,7 +338,7 @@
 #'   An overview of linear model and testing functions is given in \link{06.LinearModels}.
 #'   See also \code{\link[stats]{p.adjust}} in the \code{stats} package.
 #' 
-#' @author Gordon Smyth. Adapted by Lucas Beerland, Koen Van den Berge, Lieven Clement.
+#' @author Original \code{topTable} author: Gordon Smyth. Adapted by Koen Van den Berge.
 #' 
 #' @examples
 #' library(limma)

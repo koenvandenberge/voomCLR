@@ -51,9 +51,14 @@ bib <- c(
 ```
 
 
-# The `voomCLR` workflow
 
-## Example 1: no random effect
+The `voomCLR` workflow works much as a usual limma-voom workflow, with two changes:
+
+ - The `voom` function is replaced by a `voomCLR` function. This function transforms the counts using a centered-log-ratio (CLR) transformation, and estimates observation-level heteroscedasticity weights. The latter can be estimated empirically or analytically, as specificed using the `varCalc` argument. 
+ - The `topTable` function for performing statistical inference is replaced by a `topTableBC` function, where the `BC` stands for bias correction. Before performing inference, the parameter estimates are bias corrected. The uncertainty involved in estimating the bias term can be accommodated using bootstrapping, as specified via the `bootstrap` argument.
+ 
+
+# Transformation, variance weights and model fitting
 
 Simulate a dataset.
 
@@ -78,58 +83,22 @@ colnames(Y) <- paste0("sample",1:20)
 group <- factor(rep(0:1, each=10))
 ```
 
-The `voomCLR` workflow works much as a usual limma-voom workflow, with two changes:
-
- - The `voom` function is replaced by a `voomCLR` function.
- - An additional function for performing the bias correction is incorporated: `applyBiasCorrection`.
- 
-It is essential that the code is run in the particular order as shown below.
+## Fixed effects model
 
 ```{r}
 library(limma)
 library(voomCLR)
 design <- model.matrix(~group)
 v <- voomCLR(counts = Y,
-             design = design,
-             plot = TRUE,
-             span = 0.8) # span for the lowess smoother
-fit <- lmFit(v, design)
-# plotBeta(fit) # run this to check how confident you can be about the bias correction.
-fit <- eBayes(fit)
-tt <- topTableBC(fit, coef=2, n=Inf)
-head(tt)
+             design = design)
+fitFE <- lmFit(v, design)
+fitFE <- eBayes(fitFE)
 ```
 
 
-### Assessing specific contrasts
+## Approximating a random intercept using `limma::duplicateCorrelation`
 
-Sometimes, the contrast of interest may relate to a linear combination of model parameters, rather than a single model parameter. 
-In the `limma` framework, we would build contrasts using the `contrasts.fit` function.
-Below, we show a simple example.
-
-```{r}
-design <- model.matrix(~group)
-v <- voomCLR(counts = Y,
-             design = design,
-             plot = TRUE,
-             span = 0.8) # span for the lowess smoother
-fit <- lmFit(v, design)
-## build the contrast matrix
-cm <- matrix(0, nrow=ncol(fit$coefficients), ncol = 1)
-rownames(cm) <- colnames(fit$coefficients)
-colnames(cm) <- "group1vs0"
-cm["group1", "group1vs0"] <- 1
-## reparameterize model => one contrast is now one model parameter
-contFit <- contrasts.fit(fit, contrasts=cm)
-contFit <- eBayes(contFit)
-tt <- topTableBC(contFit, coef=1, n=Inf)
-head(tt) # note results are identical.
-```
-
-## Example 2: approximating a random intercept
-
-you need one extra input: the covariate you'd like to add as random effect.
-here I assume this is in the 'patient' object.
+Here, we approximate a random intercept model using the `patient` variable.
 
 ```{r}
 patient <- rep(paste0("patient",1:10), 2)
@@ -149,18 +118,89 @@ cf <- duplicateCorrelation(v, design, block=patient)
 fit <- lmFit(v, design,
              block = patient,
              correlation = cf$consensus)
-plotBeta(fit)
+plotBeta(fit) # view distribution of estimated coefficients and their mode
 fit <- eBayes(fit)
-tt <- topTableBC(fit, coef=2, n=Inf)
-head(tt) 
+```
+
+## Analytical heteroscedasticity weights calculation
+
+When there is a limited number of features in your dataset, the empirical mean-variance trend may be highly uncertain, and it could be a better idea to estimate the heteroscedasticity weights analytically.
+
+This can be specified using the `varCalc` argument in the `voomCLR` function. By default, it is set to `"empirical"` which uses the limma-voom implementation of empirically estimating the mean-variance trend. Analytical weights can be calculated by setting `varCalc="analytical"`. By default, we use the negative binomial distribution (`varDistribution="NB"`).
+
+```{r}
+v <- voomCLR(counts = Y,
+             design = design,
+             varCalc = "analytical")
+fitNBW <- lmFit(v, design)
+fitNBW <- eBayes(fitNBW)
 ```
 
 
+# Statistical inference
+
+The `topTableBC` function works like the original `topTable` function.
+Mean model parameters can be specified via a number or character vector.
+
+```{r}
+tt1 <- topTableBC(fitFE, coef=2, n=Inf)
+tt2 <- topTableBC(fitFE, coef="group1", n=Inf)
+identical(tt1, tt2)
+head(tt1)
+```
+
+## Assessing specific contrasts
+
+Sometimes, the contrast of interest may relate to a linear combination of model parameters, rather than a single model parameter. 
+In the `limma` framework, we would build contrasts using the `contrasts.fit` function.
+Below, we show a simple example.
+
+```{r}
+design <- model.matrix(~group)
+v <- voomCLR(counts = Y,
+             design = design) # span for the lowess smoother
+fit <- lmFit(v, design)
+## build the contrast matrix
+cm <- matrix(0, nrow=ncol(fit$coefficients), ncol = 1)
+rownames(cm) <- colnames(fit$coefficients)
+colnames(cm) <- "group1vs0"
+cm["group1", "group1vs0"] <- 1
+## reparameterize model => one contrast is now one model parameter
+contFit <- contrasts.fit(fit, contrasts=cm)
+contFit <- eBayes(contFit)
+tt <- topTableBC(contFit, coef=1, n=Inf)
+head(tt) # note results are identical.
+```
+
+## Bootstrapping
+
+The `topTableBC` function implements the bias correction procedure suggested by [Zhou et al. (2022)](https://genomebiology.biomedcentral.com/articles/10.1186/s13059-022-02655-5). Estimation of the bias term involves uncertainty, and we can propagate that uncertainty in the statistical inference via bootstrapping. While both a non-parametric and parametric bootstrap is implemented, we recommend parametric bootstrapping, as it has led to slightly better performances in our evaluations.
+
+Depending on how you have specified the mean model parameter(s) to test, additional arguments may be needed, as we show below.
+
+```{r}
+v <- voomCLR(counts = Y,
+             design = design) # span for the lowess smoother
+fit <- lmFit(v, design)
+fit <- eBayes(fit)
+
+## specifying number or character
+ttBoot1 <- topTableBC(fit, coef=2, n=Inf, 
+                      bootstrap="parametric",
+                      voomWeights = v$weights)
 
 
+## using contrast matrix: also provide this matrix.
+contFit <- contrasts.fit(fit, contrasts=cm)
+contFit <- eBayes(contFit)
+ttBoot2 <- topTableBC(contFit, coef=1, n=Inf, 
+                 bootstrap="parametric",
+                 voomWeights = v$weights,
+                 contrastMatrix = cm)
+```
 
 
-## Citing `voomCLR`
+# Citing `voomCLR`
 
 We hope that `r Biocpkg("voomCLR")` will be useful for your research. Please use the following information to cite the package and the overall approach. Thank you!
 

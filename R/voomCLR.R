@@ -1,17 +1,4 @@
-
-
-## for interactively running the code:
-# counts=Y
-# design=design
-# lib.size=NULL
-# normalize.method="none"
-# block=NULL
-# correlation=NULL
-# weights=NULL
-# span=0.5
-# plot=FALSE
-# save.plot=FALSE
-# varCalc="empirical"
+#' @include utils.R
 
 
 
@@ -153,7 +140,7 @@
 #'              plot = TRUE)
 #' @keywords rna-seq
 #' @importFrom limma normalizeBetweenArrays lmFit
-#' @import statmod methods
+#' @import statmod methods limma
 #' @export
 voomCLR <- function(counts,
                     design=NULL,
@@ -171,14 +158,27 @@ voomCLR <- function(counts,
   #	Creates an EList object for entry to lmFit() etc in the limma pipeline.
   #	Gordon Smyth and Charity Law
   #	Created 22 June 2011.  Last modified 1 May 2021.
-  # Modified by Koen Van den Berge:
+  # Modified by Koen Van den Berge in 2024:
   # - CLR transformation instead of CPM
   # - loess fitting now uses average CLR instead of average CPM
   # - Allow for analytical calculation of standard deviation
   # TODO:
   # - limma-trend? Allows for intensity-dependent prior variance per gene.
-  # - analytical weights are much different in magnitude as compared to using the trend.
 {
+  
+  ## for interactively running the code:
+  # counts=Y
+  # design=design
+  # lib.size=NULL
+  # normalize.method="none"
+  # block=NULL
+  # correlation=NULL
+  # weights=NULL
+  # span=0.5
+  # plot=FALSE
+  # save.plot=FALSE
+  # varCalc="empirical"
+  
   out <- list()
   counts <- as.matrix(counts)
   
