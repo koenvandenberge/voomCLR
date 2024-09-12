@@ -3,26 +3,26 @@
 
 # voomCLR
 
-<!-- badges: start -->
+`voomCLR` allows effective differential cell composition analysis in
+cell type count data. It leverages compositional transformations, and
+adopts bias correction on the estimated effect sizes to correct for
+compositional bias induced by such transformation. The uncertainty
+involved in estimating the bias can be propagated in the statistical
+inference via bootstrapping. Additionally, it accommodates proper
+modeling of the mean-variance structure of the counts.
 
-[![GitHub
-issues](https://img.shields.io/github/issues/koenvandenberge/voomCLR)](https://github.com/koenvandenberge/voomCLR/issues)
-[![GitHub
-pulls](https://img.shields.io/github/issues-pr/koenvandenberge/voomCLR)](https://github.com/koenvandenberge/voomCLR/pulls)
-[![R-CMD-check-bioc](https://github.com/koenvandenberge/voomCLR/actions/workflows/R-CMD-check-bioc.yaml/badge.svg)](https://github.com/koenvandenberge/voomCLR/actions/workflows/R-CMD-check-bioc.yaml)
-[![Codecov test
-coverage](https://codecov.io/gh/koenvandenberge/voomCLR/branch/main/graph/badge.svg)](https://app.codecov.io/gh/koenvandenberge/voomCLR?branch=main)
-<!-- badges: end -->
-
-`voomCLR` allows effective differential composition analysis of cell
-count data.
+`voomCLR` relies on the `limma` package, and in fact re-uses code chunks
+from the `limma` R package, which is available on Bioconductor at
+<https://bioconductor.org/packages/release/bioc/html/limma.html>.
 
 ## Installation
 
 Install the development version from GitHub using
 
 ``` r
-BiocManager::install("koenvandenberge/voomCLR")
+devtools::install_github("koenvandenberge/voomCLR")
 ```
 
-## Vignette
+# Getting started
+
+The vignette of voomCLR walks you through the basics of using `voomCLR`.
