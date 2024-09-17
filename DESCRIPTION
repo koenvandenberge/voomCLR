@@ -1,6 +1,6 @@
 Package: voomCLR
 Title: Compositional analysis of cell count data.
-Version: 0.99.29
+Version: 0.99.30
 Authors@R: 
     person("Koen", "Van den Berge", , "koen.vdberge@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-1833-8478"))
@@ -13,7 +13,7 @@ Description: voomCLR allows for compositional analysis of cell (type/state) coun
  10.1186/s13059-022-02655-5. The uncertainty involved in estimating the bias term can be
  taken into account using bootstrapping.
 biocViews: software, single-cell.
-License: MIT + file LICENSE
+License: GPL (>=2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
