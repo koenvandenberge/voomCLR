@@ -269,7 +269,7 @@
 #' @param p.valuecutoff value for adjusted p-values. Only genes with lower p-values are listed.
 #' @param fc Not implemented yet for \code{topTableBC}. optional minimum fold-change required. 
 #' @param lfc
-#'     Not implemented yet for \code{topTableBC}. Optional minimum log2-fold-change required, equal to \code{log2(fc)}. 
+#'     Not implemented yet for \code{topTableBC}. Optional minimum log-fold-change required, equal to \code{log2(fc)}. 
 #'     \code{fc} and \code{lfc} are alternative ways to specify a fold-change cutoff and, if both are specified, then \code{fc} take precedence.
 #'     If specified, then the results from \code{topTableBC} will include only genes with (at least one) absolute log-fold-change greater than \code{lfc}.
 #'     This argument is not normally used with \code{topTreat}, which handles fold-change thresholds differently via the \code{treat} function.
@@ -279,10 +279,10 @@
 #' @return 
 #'   A dataframe with a row for the \code{number} top genes and the following columns:
 #'   \item{genelist}{one or more columns of probe annotation, if genelist was included as input}
-#'   \item{logFC}{estimate of the log2-fold-change corresponding to the effect or contrast}
+#'   \item{logFC}{estimate of the log-fold-change corresponding to the effect or contrast}
 #'   \item{CI.L}{left limit of confidence interval for \code{logFC} (if \code{confint=TRUE} or \code{confint} is numeric)}
 #'   \item{CI.R}{right limit of confidence interval for \code{logFC} (if \code{confint=TRUE} or \code{confint} is numeric)}
-#'   \item{AveExpr}{average log2-expression for the probe over all arrays and channels, same as \code{Amean} in the \code{MarrayLM} object}
+#'   \item{AveExpr}{average log-expression for the probe over all arrays and channels, same as \code{Amean} in the \code{MarrayLM} object}
 #'   \item{t}{moderated t-statistic}
 #'   \item{F}{moderated F-statistic (omitted for \code{topTableBC} unless more than one coef is specified)}
 #'   \item{P.Value}{raw p-value}

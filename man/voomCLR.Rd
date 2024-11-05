@@ -47,7 +47,7 @@ If \code{"analytical"}, weights are analytically calculated using a Delta method
 }
 \value{
 An \code{\link[limma:EList]{EList}} object with the following components:
-\item{E}{numeric matrix of normalized expression values on the log2 scale}
+\item{E}{numeric matrix of normalized expression values on the log scale}
 \item{weights}{numeric matrix of inverse variance weights}
 \item{design}{design matrix}
 \item{lib.size}{numeric vector of total normalized library sizes}
