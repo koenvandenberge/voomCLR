@@ -84,7 +84,7 @@
 #'  Such quantities prevent \code{voom} from infering the correct library sizes and hence the correct precision with which each value was measured.
 #' @return
 #'  An \code{\link[limma:EList]{EList}} object with the following components:
-#'  \item{E}{numeric matrix of normalized expression values on the log2 scale}
+#'  \item{E}{numeric matrix of normalized expression values on the log scale}
 #'  \item{weights}{numeric matrix of inverse variance weights}
 #'  \item{design}{design matrix}
 #'  \item{lib.size}{numeric vector of total normalized library sizes}
@@ -235,7 +235,7 @@ voomCLR <- function(counts,
   }
   l <- lowess(sx,sy,f=span)
   if(plot) {
-    plot(sx,sy,xlab="log2( count size + 0.5 )",ylab="Sqrt( standard deviation )",pch=16,cex=0.25)
+    plot(sx,sy,xlab="CLR-transformed count",ylab="Sqrt( standard deviation )",pch=16,cex=0.25)
     title("voom: Mean-variance trend")
     lines(l,col="red")
   }
@@ -298,7 +298,7 @@ voomCLR <- function(counts,
   else
     out$targets$lib.size <- lib.size
   if(save.plot) {
-    out$voom.xy <- list(x=sx,y=sy,xlab="log2( count size + 0.5 )",ylab="Sqrt( standard deviation )")
+    out$voom.xy <- list(x=sx,y=sy,xlab="CLR-transformed count",ylab="Sqrt( standard deviation )")
     out$voom.line <- l
   }
   
