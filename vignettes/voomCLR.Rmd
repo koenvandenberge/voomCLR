@@ -193,13 +193,13 @@ ttBoot1 <- topTableBC(fit, coef=2, n=Inf,
                       voomWeights = v$weights)
 
 
-## using contrast matrix: also provide this matrix.
+## using contrast matrix: also provide this matrix, specifying the relevant column.
 contFit <- contrasts.fit(fit, contrasts=cm)
 contFit <- eBayes(contFit)
 ttBoot2 <- topTableBC(contFit, coef=1, n=Inf, 
                  bootstrap="parametric",
                  voomWeights = v$weights,
-                 contrastMatrix = cm)
+                 contrastMatrix = cm[,1,drop=FALSE])
 ```
 
 

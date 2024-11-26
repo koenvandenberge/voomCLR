@@ -42,7 +42,8 @@ This argument is not normally used with \code{topTreat}, which handles fold-chan
 \item{voomWeights}{Required when \code{bootstrap = "parametric"}. The observation-level heteroscedasticity weights after running \code{voomCLR}.
 Recommended to use \code{v$weights}, with \code{v} the output from \code{voomCLR}.}
 
-\item{contrastMatrix}{If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix.}
+\item{contrastMatrix}{If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit},
+then provide this contrast matrix and if needed subset it by the relevant column. See examples and vignette.}
 
 \item{returnVars}{Logical: should all variance components be returned? Only applicable if using bootstrapping.}
 
@@ -148,7 +149,7 @@ ttParBoot <- topTableBC(fit, coef=2, bootstrap="parametric", voomWeights=v$weigh
 L <- matrix(c(0,1), nrow=2, ncol=1)
 conFit <- contrasts.fit(fit, contrast=L)
 conFit <- eBayes(conFit)
-ttParBoot <- topTableBC(conFit, coef=1, bootstrap="parametric", voomWeights=v$weights, contrastMatrix=L, sort.by="none", n=Inf)
+ttParBoot <- topTableBC(conFit, coef=1, bootstrap="parametric", voomWeights=v$weights, contrastMatrix=L[,1,drop=FALSE], sort.by="none", n=Inf)
 
 }
 \seealso{

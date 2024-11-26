@@ -52,9 +52,10 @@
   
   ### for dev:
   # beta <- fit$coefficients
-  # sigma2 <- fit$s2.post
+  # sigma2 <- sigma2post
   # weights <- v$weights
   # n <- nrow(design)
+  # L <- contrastMatrix
   
   X <- design
 

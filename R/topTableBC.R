@@ -132,6 +132,7 @@
         cov_mode <- parBootOut$covMode[,coef]
       } else {
         ## focus on contrast
+        ## note that here, 'fit' should be the result from contrasts.fit
         parBootOut <- .parametricBootstrap(beta = fit$coefficients[,coef,drop=FALSE], 
                                            design = design,
                                            sigma2 = sigma2post,
@@ -255,7 +256,8 @@
 #' @param voomWeights 
 #'      Required when \code{bootstrap = "parametric"}. The observation-level heteroscedasticity weights after running \code{voomCLR}.
 #'      Recommended to use \code{v$weights}, with \code{v} the output from \code{voomCLR}.
-#' @param contrastMatrix If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, then provide this contrast matrix. 
+#' @param contrastMatrix If \code{bootstrap="parametric"}, and you are working with a contrast matrix through \code{contrasts.fit}, 
+#' then provide this contrast matrix and if needed subset it by the relevant column. See examples and vignette.
 #' @param genelist data frame or character vector containing feature information.
 #'     For \code{topTableBC} only, this defaults to \code{fit$genes}.
 #' @param adjust.method method used to adjust the p-values for multiple testing.  Options, in increasing conservatism, include \code{"none"}, \code{"BH"}, \code{"BY"} and \code{"holm"}.
@@ -375,7 +377,7 @@
 #' L <- matrix(c(0,1), nrow=2, ncol=1)
 #' conFit <- contrasts.fit(fit, contrast=L)
 #' conFit <- eBayes(conFit)
-#' ttParBoot <- topTableBC(conFit, coef=1, bootstrap="parametric", voomWeights=v$weights, contrastMatrix=L, sort.by="none", n=Inf)
+#' ttParBoot <- topTableBC(conFit, coef=1, bootstrap="parametric", voomWeights=v$weights, contrastMatrix=L[,1,drop=FALSE], sort.by="none", n=Inf)
 #' 
 #' @export
 topTableBC <- function(fit,
@@ -473,6 +475,14 @@ topTableBC <- function(fit,
   
   #	Check adjust.method
   if(is.null(adjust.method)) adjust.method <- "BH"
+  
+  # Check contrast matrix
+  if(!is.null(contrastMatrix)){
+    if(ncol(contrastMatrix) > 1){
+      stop(paste0("Currently we only provide t-test functionality. ",
+           "Contrast matrix should have at most 1 column."))
+    }
+  }
     
     #	Set log2-fold-change cutoff
     if(is.null(fc)) {
