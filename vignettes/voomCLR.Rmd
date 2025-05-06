@@ -22,9 +22,9 @@ vignette: >
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
-    collapse = TRUE,
-    comment = "#>",
-    crop = NULL ## Related to https://stat.ethz.ch/pipermail/bioc-devel/2020-April/016656.html
+  collapse = TRUE,
+  comment = "#>",
+  crop = NULL
 )
 ```
 
@@ -38,15 +38,15 @@ library("RefManageR")
 
 ## Write bibliography information
 bib <- c(
-    R = citation(),
-    BiocStyle = citation("BiocStyle")[1],
-    knitr = citation("knitr")[1],
-    RefManageR = citation("RefManageR")[1],
-    rmarkdown = citation("rmarkdown")[1],
-    sessioninfo = citation("sessioninfo")[1],
-    testthat = citation("testthat")[1],
-    voomCLR = citation("voomCLR")[1],
-    limma = citation("limma")[1]
+  R = citation(),
+  BiocStyle = citation("BiocStyle")[1],
+  knitr = citation("knitr")[1],
+  RefManageR = citation("RefManageR")[1],
+  rmarkdown = citation("rmarkdown")[1],
+  sessioninfo = citation("sessioninfo")[1],
+  testthat = citation("testthat")[1],
+  voomCLR = citation("voomCLR")[1],
+  limma = citation("limma")[1]
 )
 ```
 
@@ -69,21 +69,23 @@ Simulate a dataset.
 set.seed(495212344)
 n <- 40 # sample size
 P <- 10 # number of cell types
-mu0 <- rnbinom(n=P, size=1/2, mu=400)
+mu0 <- rnbinom(n = P, size = 1 / 2, mu = 400)
 mu0 # absolute counts in group 0
-beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
-  rbinom(n=P, size=1, prob=.15) *
-  sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
+beta <- rlnorm(n = P, meanlog = 0, sdlog = 2) * # these are log-fold-changes
+  rbinom(n = P, size = 1, prob = .15) *
+  sample(c(-1, 1), size = P, replace = TRUE) # fold change on log scale
 mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
-relAbundances <- data.frame(g0=mu0/sum(mu0),
-                            g1=mu1/sum(mu1)) # relative abundance of absolute count
+relAbundances <- data.frame(
+  g0 = mu0 / sum(mu0),
+  g1 = mu1 / sum(mu1)
+) # relative abundance of absolute count
 # relative abundance information (observed data in typical experiment)
-Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
-Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
+Y0 <- rmultinom(n = 10, size = 1e4, prob = relAbundances$g0)
+Y1 <- rmultinom(n = 10, size = 1e4, prob = relAbundances$g1)
 Y <- cbind(Y0, Y1)
-rownames(Y) <- paste0("celltype",1:10)
-colnames(Y) <- paste0("sample",1:20)
-group <- factor(rep(0:1, each=10))
+rownames(Y) <- paste0("celltype", 1:10)
+colnames(Y) <- paste0("sample", 1:20)
+group <- factor(rep(0:1, each = 10))
 ```
 
 ## Fixed effects model
@@ -92,8 +94,10 @@ group <- factor(rep(0:1, each=10))
 library(limma)
 library(voomCLR)
 design <- model.matrix(~group)
-v <- voomCLR(counts = Y,
-             design = design)
+v <- voomCLR(
+  counts = Y,
+  design = design
+)
 fitFE <- lmFit(v, design)
 fitFE <- eBayes(fitFE)
 ```
@@ -104,23 +108,28 @@ fitFE <- eBayes(fitFE)
 Here, we approximate a random intercept model using the `patient` variable.
 
 ```{r}
-patient <- rep(paste0("patient",1:10), 2)
-v <- voomCLR(counts = Y,
-             design = design,
-             lib.size = NULL)
+patient <- rep(paste0("patient", 1:10), 2)
+v <- voomCLR(
+  counts = Y,
+  design = design,
+  lib.size = NULL
+)
 ## estimate correlation within block
-cf <- duplicateCorrelation(v, design, block=patient)
+cf <- duplicateCorrelation(v, design, block = patient)
 ## re-estimate weights conditional on estimated correlation
-v <- voomCLR(counts = Y,
-             design = design,
-             lib.size = NULL,
-             block = patient,
-             correlation = cf$consensus)
+v <- voomCLR(
+  counts = Y,
+  design = design,
+  lib.size = NULL,
+  block = patient,
+  correlation = cf$consensus
+)
 ## use 'final' weights to get 'final' estimate of within-block correlation.
-cf <- duplicateCorrelation(v, design, block=patient)
+cf <- duplicateCorrelation(v, design, block = patient)
 fit <- lmFit(v, design,
-             block = patient,
-             correlation = cf$consensus)
+  block = patient,
+  correlation = cf$consensus
+)
 plotBeta(fit) # view distribution of estimated coefficients and their mode
 fit <- eBayes(fit)
 ```
@@ -132,9 +141,11 @@ When there is a limited number of features in your dataset, the empirical mean-v
 This can be specified using the `varCalc` argument in the `voomCLR` function. By default, it is set to `"empirical"` which uses the limma-voom implementation of empirically estimating the mean-variance trend. Analytical weights can be calculated by setting `varCalc="analytical"`. By default, we use the negative binomial distribution (`varDistribution="NB"`).
 
 ```{r}
-v <- voomCLR(counts = Y,
-             design = design,
-             varCalc = "analytical")
+v <- voomCLR(
+  counts = Y,
+  design = design,
+  varCalc = "analytical"
+)
 fitNBW <- lmFit(v, design)
 fitNBW <- eBayes(fitNBW)
 ```
@@ -146,8 +157,8 @@ The `topTableBC` function works like the original `topTable` function.
 Mean model parameters can be specified via a number or character vector.
 
 ```{r}
-tt1 <- topTableBC(fitFE, coef=2, n=Inf)
-tt2 <- topTableBC(fitFE, coef="group1", n=Inf)
+tt1 <- topTableBC(fitFE, coef = 2, n = Inf)
+tt2 <- topTableBC(fitFE, coef = "group1", n = Inf)
 identical(tt1, tt2)
 head(tt1)
 ```
@@ -160,18 +171,20 @@ Below, we show a simple example.
 
 ```{r}
 design <- model.matrix(~group)
-v <- voomCLR(counts = Y,
-             design = design) # span for the lowess smoother
+v <- voomCLR(
+  counts = Y,
+  design = design
+) # span for the lowess smoother
 fit <- lmFit(v, design)
 ## build the contrast matrix
-cm <- matrix(0, nrow=ncol(fit$coefficients), ncol = 1)
+cm <- matrix(0, nrow = ncol(fit$coefficients), ncol = 1)
 rownames(cm) <- colnames(fit$coefficients)
 colnames(cm) <- "group1vs0"
 cm["group1", "group1vs0"] <- 1
 ## reparameterize model => one contrast is now one model parameter
-contFit <- contrasts.fit(fit, contrasts=cm)
+contFit <- contrasts.fit(fit, contrasts = cm)
 contFit <- eBayes(contFit)
-tt <- topTableBC(contFit, coef=1, n=Inf)
+tt <- topTableBC(contFit, coef = 1, n = Inf)
 head(tt) # note results are identical.
 ```
 
@@ -182,24 +195,31 @@ The `topTableBC` function implements the bias correction procedure suggested by 
 Depending on how you have specified the mean model parameter(s) to test, additional arguments may be needed, as we show below.
 
 ```{r}
-v <- voomCLR(counts = Y,
-             design = design) # span for the lowess smoother
+v <- voomCLR(
+  counts = Y,
+  design = design
+) # span for the lowess smoother
 fit <- lmFit(v, design)
 fit <- eBayes(fit)
 
 ## specifying number or character
-ttBoot1 <- topTableBC(fit, coef=2, n=Inf, 
-                      bootstrap="parametric",
-                      voomWeights = v$weights)
+ttBoot1 <- topTableBC(fit,
+  coef = 2, n = Inf,
+  bootstrap = "parametric",
+  voomWeights = v$weights
+)
 
 
-## using contrast matrix: also provide this matrix, specifying the relevant column.
-contFit <- contrasts.fit(fit, contrasts=cm)
+## using contrast matrix: also provide this matrix, 
+## specifying the relevant column.
+contFit <- contrasts.fit(fit, contrasts = cm)
 contFit <- eBayes(contFit)
-ttBoot2 <- topTableBC(contFit, coef=1, n=Inf, 
-                 bootstrap="parametric",
-                 voomWeights = v$weights,
-                 contrastMatrix = cm[,1,drop=FALSE])
+ttBoot2 <- topTableBC(contFit,
+  coef = 1, n = Inf,
+  bootstrap = "parametric",
+  voomWeights = v$weights,
+  contrastMatrix = cm[, 1, drop = FALSE]
+)
 ```
 
 
