@@ -292,7 +292,9 @@
 #' @usage
 #' topTableBC(fit, coef = NULL, number = 10, genelist = fit$genes,
 #'            adjust.method = "BH", sort.by = "B", resort.by = NULL,
-#'            p.value = 1, fc = NULL, lfc = NULL, confint = FALSE)
+#'            p.value = 1, fc = NULL, lfc = NULL, confint = FALSE,
+#'            bootstrap = FALSE, voomWeights = NULL, contrastMatrix = NULL,
+#'            returnVars = FALSE)
 #' @param fit list containing a linear model fit produced by \code{lmFit},
 #'  \code{lm.series}, \code{gls.series} or \code{mrlm}.
 #'     For \code{topTableBC}, \code{fit} should be an object of class
@@ -303,7 +305,7 @@
 #'   is by F-statistic for that set of contrasts.
 #' @param number maximum number of features to list.
 #' @param bootstrap Either \code{"nonparametric"}, \code{"parametric"} or
-#'  \code{FALSE}. Should bootstrapping be performed to take into account
+#'  \code{FALSE} (default). Should bootstrapping be performed to take into account
 #'  uncertainty of the estimation of the bias correction term?
 #' @param voomWeights
 #'      Required when \code{bootstrap = "parametric"}. The observation-level
@@ -523,6 +525,7 @@
 #' )
 #'
 #' @export
+#' @import boot
 topTableBC <- function(fit,
                        coef = NULL,
                        number = 10,
@@ -551,6 +554,18 @@ topTableBC <- function(fit,
   if (is.null(fit$coefficients)) stop("coefficients not found in fit object")
   if (confint && is.null(fit$stdev.unscaled)) {
     stop("stdev.unscaled not found in fit object")
+  }
+  
+  # Check bootstrap pm
+  if (!isFALSE(bootstrap)) {
+    if (length(bootstrap)!=1) {
+      stop("bootstrap should either be \"nonparametric\",
+           \"parametric\" or FALSE")
+      }
+    if (!(bootstrap %in% c("nonparametric","parametric"))) {
+      stop("bootstrap should either be \"nonparametric\", \"parametric\" or 
+           FALSE")
+      }
   }
 
   # Check weights when bootstrapping

@@ -10,7 +10,8 @@
 #' @usage voomALR(counts, design = NULL, lib.size = NULL,
 #'        normalize.method = "none",
 #'       block = NULL, correlation = NULL, weights = NULL,
-#'       span = 0.5, plot = FALSE, save.plot = FALSE)
+#'       span = 0.5, plot = FALSE, save.plot = FALSE,
+#'        varCalc = "empirical")
 #' @param counts a numeric \code{matrix} containing raw counts, or an
 #'  \code{ExpressionSet} containing raw counts, or a \code{DGEList} object.
 #'    Counts must be non-negative and NAs are not permitted.
@@ -260,6 +261,14 @@ voomALR <- function(counts,
     rownames(design) <- colnames(counts)
     colnames(design) <- "GrandMean"
   }
+  
+  # Check additional arguments
+  if (length(varCalc) != 1) {
+    stop("varCalc should be either \"empirical\" or \"analytical\"")
+    }
+  if (!(varCalc %in% c("empirical","analytical"))) {
+    stop("varCalc should be either \"empirical\" or \"analytical\"")
+    }
 
 
   # 	Fit linear model to ALR

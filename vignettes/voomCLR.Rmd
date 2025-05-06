@@ -50,11 +50,15 @@ bib <- c(
 )
 ```
 
+# Installation
 
+If installation within `R` using the `install.packages` function does not succeed, you may want to try using the Terminal command `R CMD INSTALL dir`, where `dir` is replaced by the path to the `voomCLR` directory.
+
+# Introduction
 
 The `voomCLR` workflow works much as a usual limma-voom workflow, with two changes:
 
- - The `voom` function is replaced by a `voomCLR` function. This function transforms the counts using a centered-log-ratio (CLR) transformation, and estimates observation-level heteroscedasticity weights. The latter can be estimated empirically or analytically, as specificed using the `varCalc` argument. 
+ - The `voom` function is replaced by a `voomCLR` function. This function transforms the counts using a centered-log-ratio (CLR) transformation, and estimates observation-level heteroscedasticity weights. The latter can be estimated empirically or analytically, as specified using the `varCalc` argument. 
  - The `topTable` function for performing statistical inference is replaced by a `topTableBC` function, where the `BC` stands for bias correction. Before performing inference, the parameter estimates are bias corrected. The uncertainty involved in estimating the bias term can be accommodated using bootstrapping, as specified via the `bootstrap` argument.
  
 With respect to the `topTableBC` function, it is important to note that the bias correction only makes sense for testing differences. For example, when testing the difference in expected transformed expression values between groups, as we do below. When testing a baseline mean, e.g. when you are interested in testing whether a feature's average abundance is different from zero (or any other value), the bias correction makes no sense, and one should fall back to the original `topTable` function.
@@ -80,8 +84,8 @@ relAbundances <- data.frame(
   g1 = mu1 / sum(mu1)
 ) # relative abundance of absolute count
 # relative abundance information (observed data in typical experiment)
-Y0 <- rmultinom(n = 10, size = 1e4, prob = relAbundances$g0)
-Y1 <- rmultinom(n = 10, size = 1e4, prob = relAbundances$g1)
+Y0 <- rmultinom(n = n/2, size = 1e4, prob = relAbundances$g0)
+Y1 <- rmultinom(n = n/2, size = 1e4, prob = relAbundances$g1)
 Y <- cbind(Y0, Y1)
 rownames(Y) <- paste0("celltype", 1:10)
 colnames(Y) <- paste0("sample", 1:20)

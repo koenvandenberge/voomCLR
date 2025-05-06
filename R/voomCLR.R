@@ -11,7 +11,8 @@
 #' @usage voomCLR(counts, design = NULL, lib.size = NULL,
 #'        normalize.method = "none",
 #'       block = NULL, correlation = NULL, weights = NULL,
-#'       span = 0.5, plot = FALSE, save.plot = FALSE)
+#'       span = 0.5, plot = FALSE, save.plot = FALSE,
+#'       varCalc = "empirical", varDistribution = "NB")
 #' @param counts a numeric \code{matrix} containing raw counts, or an
 #'  \code{ExpressionSet} containing raw counts, or a \code{DGEList} object.
 #'    Counts must be non-negative and NAs are not permitted.
@@ -54,8 +55,9 @@
 #' way, i.e., using the empirical mean-variance trend.
 #' If \code{"analytical"}, weights are analytically calculated using a Delta
 #' method approximation.
-#' @param varDistribution The distribution used to analytically calculate the
-#'  mean-variance weights.
+#' @param varDistribution The distribution used to analytically calculate 
+#' (\code{varCalc="analytical"}) the mean-variance weights. 
+#' Either \code{"NB"} (default) or \code{"poisson"}.
 #' @details
 #'  This function is intended to process RNA-seq or ChIP-seq data prior to
 #'   linear modelling in limma.
@@ -252,6 +254,16 @@ voomCLR <- function(counts,
     design <- matrix(1, ncol(counts), 1)
     rownames(design) <- colnames(counts)
     colnames(design) <- "GrandMean"
+  }
+  
+  # Check additional parameters
+  if ((length(varCalc) != 1) & (!(varCalc %in% c("empirical","analytical")))) {
+    stop("varCalc should be either \"empirical\" or \"analytical\"")
+    }
+  if (varCalc=="analytical") {
+    if ((length(varDistribution)!=1) &
+        (!(varDistribution %in% c("poisson","NB")))) {
+      stop("varDistribution should be either \"NB\" or \"poisson\"")}
   }
 
 
