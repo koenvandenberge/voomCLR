@@ -236,18 +236,6 @@ voomCLR <- function(counts,
   # TODO:
   # - limma-trend? Allows for intensity-dependent prior variance per gene.
 
-  ## for interactively running the code:
-  # counts=Y
-  # design=design
-  # lib.size=NULL
-  # normalize.method="none"
-  # block=NULL
-  # correlation=NULL
-  # weights=NULL
-  # span=0.5
-  # plot=FALSE
-  # save.plot=FALSE
-  # varCalc="empirical"
 
   out <- list()
   counts <- as.matrix(counts)
@@ -319,15 +307,6 @@ voomCLR <- function(counts,
     lines(l, col = "red")
   }
 
-  # 	Make interpolating rule
-  # 	Special treatment of zero counts is now removed;
-  # 	instead zero counts get same variance as smallest gene average.
-  # 	l$x <- c(0.5^0.25, l$x)
-  # 	l$x <- c(log2(0.5), l$x)
-  # 	var0 <- var(log2(0.5*1e6/(lib.size+0.5)))^0.25
-  # 	var0 <- max(var0,1e-6)
-  # 	l$y <- c(var0, l$y)
-
 
   # 	Find individual quarter-root fitted counts
   if (fit$rank < ncol(design)) {
@@ -387,78 +366,3 @@ voomCLR <- function(counts,
 
   new("EList", out)
 }
-
-
-
-
-
-
-## example
-# library(limma)
-# set.seed(495212344)
-# n <- 40 # sample size
-# P <- 10 # number of cell types
-# mu0 <- rnbinom(n=P, size=1/2, mu=400)
-# mu0 # absolute counts in group 0
-# beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
-#   rbinom(n=P, size=1, prob=.15) *
-#   sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
-# mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
-# # relative abundance of absolute count
-# relAbundances <- data.frame(g0=mu0/sum(mu0),
-#                             g1=mu1/sum(mu1)) 
-# # relative abundance information (observed data in typical experiment)
-# Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
-# Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
-# Y <- cbind(Y0, Y1)
-# rownames(Y) <- paste0("celltype",1:10)
-# colnames(Y) <- paste0("sample",1:20)
-# group <- factor(rep(0:1, each=10))
-# design <- model.matrix(~group)
-# v <- voomCLR(counts = Y,
-#              design = design,
-#              lib.size = NULL,
-#              plot = TRUE)
-# fit <- lmFit(v, design)
-# fit <- eBayes(fit)
-# tt <- topTableBC(fit, ....)
-
-
-# #### workflow
-# ## requires two objects:
-# ##  - design matrix as constructed using model.matrix
-# ##  - count matrix where rows are populations and columns are samples
-# library(limma)
-# library(voomCLR)
-# v <- voomCLR(counts = countMatrix,
-#              design = design,
-#              lib.size = NULL)
-# fit <- lmFit(v, design)
-# plotBeta(fit)
-# fit <- eBayes(fit)
-# # testing is custom: fill in based on hypothesis of interest.
-# tt <- topTableBC(fit, ....)
-
-
-
-## in the case of random effects
-# you need one extra input: the covariate you'd like to add as random effect.
-# here I assume this is in the 'patient' object.
-# library(limma)
-# v <- voomCLR(counts = countMatrix,
-#              design = design,
-#              lib.size = NULL)
-# cf <- duplicateCorrelation(v, design, block=patient)
-# v <- voomCLR(counts = countMatrix,
-#              design = design,
-#              lib.size = NULL,
-#              block = patient,
-#              correlation = cf$consensus)
-# cf <- duplicateCorrelation(v, design, block=patient)
-# fit <- lmFit(v, design,
-#              block = patient,
-#              correlation = cf$consensus)
-# plotBeta(fit)
-# fit <- eBayes(fit)
-# # testing is custom: fill in based on hypothesis of interest.
-# tt <- topTableBC(fit, ....)

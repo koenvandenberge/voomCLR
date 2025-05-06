@@ -42,12 +42,6 @@
                                  n,
                                  R = 4e3,
                                  L = NULL) {
-  ### for dev:
-  # beta <- fit$coefficients
-  # sigma2 <- sigma2post
-  # weights <- v$weights
-  # n <- nrow(design)
-  # L <- contrastMatrix
 
   X <- design
 

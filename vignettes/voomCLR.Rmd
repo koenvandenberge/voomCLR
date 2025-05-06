@@ -210,7 +210,7 @@ ttBoot1 <- topTableBC(fit,
 )
 
 
-## using contrast matrix: also provide this matrix, 
+## using contrast matrix: also provide this matrix,
 ## specifying the relevant column.
 contFit <- contrasts.fit(fit, contrasts = cm)
 contFit <- eBayes(contFit)

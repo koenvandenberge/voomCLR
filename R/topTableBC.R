@@ -28,23 +28,6 @@
   #   Last revised 12 Apr 2020.
   # Adapted by Koen Van den Berge to include bias correction in 2024.
 
-  ## for dev:
-  # eb=fit[ebcols]
-  # A=fit$Amean
-  # sigma2post=fit$s2.post
-  # design = fit$design
-  # fit=fit[c("coefficients","stdev.unscaled")]
-  # coef=coef
-  # number=number
-  # genelist=genelist
-  # adjust.method=adjust.method
-  # sort.by=sort.by
-  # resort.by=resort.by
-  # p.value=p.value
-  # lfc=lfc
-  # confint=confint
-  # bootstrap <- "parametric"
-  # voomWeights <- voomWeights
 
   # 	Check fit
   fit$coefficients <- as.matrix(fit$coefficients)
@@ -560,50 +543,6 @@ topTableBC <- function(fit,
   # 	4 August 2003.  Last modified 20 Aug 2022.
 
 
-  # ### for dev:
-  # library(limma)
-  # set.seed(495212344)
-  # n <- 40 # sample size
-  # P <- 10 # number of cell types
-  # mu0 <- rnbinom(n=P, size=1/2, mu=400)
-  # mu0 # absolute counts in group 0
-  # beta <- rlnorm(n=P, meanlog = 0, sdlog=2) * # these are log-fold-changes
-  #   rbinom(n=P, size=1, prob=.15) *
-  #   sample(c(-1,1), size=P, replace=TRUE) # fold change on log scale
-  # mu1 <- exp(beta) * mu0 # because we want log(mu2/mu1) = beta
-  # # relative abundance of absolute count
-  # relAbundances <- data.frame(g0=mu0/sum(mu0),
-  #                             g1=mu1/sum(mu1))
-  # # relative abundance information (observed data in typical experiment)
-  # Y0 <- rmultinom(n=10, size=1e4, prob=relAbundances$g0)
-  # Y1 <- rmultinom(n=10, size=1e4, prob=relAbundances$g1)
-  # Y <- cbind(Y0, Y1)
-  # rownames(Y) <- paste0("celltype",1:10)
-  # colnames(Y) <- paste0("sample",1:20)
-  # group <- factor(rep(0:1, each=10))
-  # design <- model.matrix(~group)
-  # v <- voomCLR(counts = Y,
-  #              design = design,
-  #              lib.size = NULL,
-  #              plot = TRUE)
-  # fit <- lmFit(v, design)
-  # fit <- eBayes(fit)
-  # fit <- fit
-  # coef <- 2
-  # number <- 10
-  # genelist=fit$genes
-  # eb <- NULL
-  # adjust.method <- "BH"
-  # sort.by <- "M"
-  # resort.by <- NULL
-  # p.value <- 1
-  # fc <- NULL
-  # lfc <- NULL
-  # confint <- FALSE
-  # bootstrap <- "parametric"
-  # voomWeights <- v$weights
-  # contrastMatrix <- matrix(c(0,1),ncol=1)
-
   # 	Check fit
   if (!is(fit, "MArrayLM")) stop("fit must be an MArrayLM object")
   if (is.null(fit$t) && is.null(fit$F)) {
@@ -670,14 +609,6 @@ topTableBC <- function(fit,
     if (!is.null(fit$treat.lfc)) {
       stop("Treat p-values can only be displayed for single coefficients")
     }
-    # coef <- unique(coef)
-    # if(length(fit$coefficients[1,coef]) < ncol(fit)) fit <- fit[,coef]
-    # if(sort.by=="B") sort.by <- "F"
-    # return(.topTableF(fit,number=number,genelist=genelist,
-    #                   adjust.method=adjust.method,
-    #                   sort.by=sort.by,
-    #                   p.value=p.value,
-    #                   lfc=lfc))
   }
 
   # 	Call low-level topTable function for t-statistics
